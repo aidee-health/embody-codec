@@ -7,19 +7,24 @@ messages.
 
 from abc import ABC, abstractmethod
 import struct
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from .crc import crc16
 
 
 @dataclass
 class Message(ABC):
-    # unpack format to be overridden by sub-classes, see https://docs.python.org/3/library/struct.html#format-characters
-    # does not include header (type and length field) or footer (crc)
+    """Abstract base class for protocol messages"""
+
     struct_format = None
-    # Protocol type field - must be set by subclasses
+    """unpack format to be overridden by sub-classes, see 
+    https://docs.python.org/3/library/struct.html#format-characters 
+    does not include header (type and length field) or footer (crc)"""
+
     msg_type = None
-    # crc footer is dynamically set
+    """Protocol type field - must be set by subclasses"""
+
     crc = None
+    """crc footer is dynamically set"""
 
     @classmethod
     def __body_length(cls) -> int:
@@ -54,6 +59,8 @@ class Message(ABC):
 
 @dataclass
 class Heartbeat(Message):
+    """Heartbeat message type"""
+
     struct_format = ""  # heartbeat message has no attributes
     msg_type = 0x01
 
@@ -63,6 +70,8 @@ class Heartbeat(Message):
 
 @dataclass
 class GetAttribute(Message):
+    """GetAttribute message type"""
+
     struct_format = ">B"
     msg_type = 0x12
     attribute_id: int
@@ -71,9 +80,10 @@ class GetAttribute(Message):
         return struct.pack(self.struct_format, self.attribute_id)
 
 
-# Decode message - raises BufferError if data buffer is too short. Returns None if unknown message type
 def decode(data: bytes) -> Message:
-    """Decodes a bytes object into proper message object"""
+    """Decodes a bytes object into proper message object - raises BufferError if data buffer is too short.
+    Returns None if unknown message type"""
+
     message_type = data[0]
     if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])
