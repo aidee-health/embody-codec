@@ -54,14 +54,14 @@ class Message(ABC):
 
     @abstractmethod
     def _encode_body(self) -> bytes:
-        return b''  # should be overridden by subclasses
+        return b''
 
 
 @dataclass
 class Heartbeat(Message):
     """Heartbeat message type"""
 
-    struct_format = ""  # heartbeat message has no attributes
+    struct_format = ""
     msg_type = 0x01
 
     def _encode_body(self):
