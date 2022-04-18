@@ -59,7 +59,6 @@ class Message(ABC):
 
 @dataclass
 class Heartbeat(Message):
-    """Heartbeat message type"""
 
     msg_type = 0x01
 
@@ -69,7 +68,6 @@ class Heartbeat(Message):
 
 @dataclass
 class HeartbeatResponse(Message):
-    """HeartbeatResponse message type"""
 
     msg_type = 0x81
 
@@ -79,7 +77,6 @@ class HeartbeatResponse(Message):
 
 @dataclass
 class NackResponse(Message):
-    """NackResponse message type"""
 
     struct_format = ">B"
     error_messages = {0x01: 'Unknown message type', 0x02: 'Unknown message content', 0x03: 'Unknown attribute',
@@ -100,7 +97,6 @@ class NackResponse(Message):
 
 @dataclass
 class GetAttribute(Message):
-    """GetAttribute message type"""
 
     struct_format = ">B"
     msg_type = 0x12
