@@ -54,7 +54,7 @@ class Message(ABC):
 
     @abstractmethod
     def _encode_body(self) -> bytes:
-        return b''
+        return bytes()
 
 
 @dataclass
@@ -64,10 +64,10 @@ class Heartbeat(Message):
     struct_format = ""
     msg_type = 0x01
 
-    def _encode_body(self):
-        return b''
+    def _encode_body(self) -> bytes:
+        return bytes()
 
-    
+
 @dataclass
 class GetAttribute(Message):
     """GetAttribute message type"""
