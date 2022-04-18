@@ -67,7 +67,7 @@ class Heartbeat(Message):
     def _encode_body(self):
         return b''
 
-
+    
 @dataclass
 class GetAttribute(Message):
     """GetAttribute message type"""
