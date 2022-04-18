@@ -20,6 +20,6 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py') --max-line-length=120
+        pylint $(git ls-files '*.py')
 #    - name: Run wemake python styleguide
 #      uses: wemake-services/wemake-python-styleguide@0.16.1
