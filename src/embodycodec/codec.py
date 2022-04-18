@@ -31,6 +31,7 @@ class Message(ABC):
 
     @classmethod
     def decode(cls, data: bytes):
+        """Decode bytes into message object"""
         if len(data) < cls.__body_length():
             raise BufferError("Buffer too short for message")
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.__body_length()])))
@@ -38,6 +39,7 @@ class Message(ABC):
         return msg
 
     def encode(self) -> bytes:
+        """Encode a message object to bytes"""
         header = struct.pack(">BH", self.msg_type, type(self).__full_length())
         body = self._encode_body()
         header_and_body = header + body
@@ -71,6 +73,7 @@ class GetAttribute(Message):
 
 # Decode message - raises BufferError if data buffer is too short. Returns None if unknown message type
 def decode(data: bytes) -> Message:
+    """Decodes a bytes object into proper message object"""
     message_type = data[0]
     if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])

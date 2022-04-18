@@ -3,6 +3,7 @@
 
 
 def crc16(data: bytes, poly=0x1021):
+    """Calculate CRC-16 from input bytes"""
     data = bytearray(data)
     crc = 0xFFFF
     for b in data:
