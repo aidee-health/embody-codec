@@ -15,7 +15,7 @@ from .crc import crc16
 class Message(ABC):
     """Abstract base class for protocol messages"""
 
-    struct_format = None
+    struct_format = ""
     """unpack format to be overridden by sub-classes, see 
     https://docs.python.org/3/library/struct.html#format-characters 
     does not include header (type and length field) or footer (crc)"""
@@ -61,11 +61,41 @@ class Message(ABC):
 class Heartbeat(Message):
     """Heartbeat message type"""
 
-    struct_format = ""
     msg_type = 0x01
 
     def _encode_body(self) -> bytes:
         return bytes()
+
+
+@dataclass
+class HeartbeatResponse(Message):
+    """HeartbeatResponse message type"""
+
+    msg_type = 0x81
+
+    def _encode_body(self) -> bytes:
+        return bytes()
+
+
+@dataclass
+class NackResponse(Message):
+    """NackResponse message type"""
+
+    struct_format = ">B"
+    error_messages = {0x01: 'Unknown message type', 0x02: 'Unknown message content', 0x03: 'Unknown attribute',
+                      0x04: 'Message to short', 0x05: 'Message to long', 0x06: 'Message with illegal CRC',
+                      0x07: 'Message buffer full', 0x08: 'File system error', 0x09: 'Delete file error',
+                      0x0A: 'File not found', 0x0B: 'Retransmit failed', 0x0C: 'File not opened'}
+    msg_type = 0x82
+    response_code: int
+
+    def _encode_body(self) -> bytes:
+        return struct.pack(self.struct_format, self.response_code)
+
+    def error_message(self) -> str:
+        if self.response_code is None:
+            return None
+        return self.error_messages.get(self.response_code)
 
 
 @dataclass
@@ -87,6 +117,10 @@ def decode(data: bytes) -> Message:
     message_type = data[0]
     if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])
+    if message_type == HeartbeatResponse.msg_type:
+        return HeartbeatResponse.decode(data[3:])
+    if message_type == NackResponse.msg_type:
+        return NackResponse.decode(data[3:])
     if message_type == GetAttribute.msg_type:
         return GetAttribute.decode(data[3:])
     return None
