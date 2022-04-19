@@ -5,10 +5,12 @@ All protocol message types inherits from the Message class, and provides self-co
 messages.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, astuple
 from .crc import crc16
+from .attributes import *
+from .types import *
 
 
 @dataclass
@@ -31,53 +33,37 @@ class Message(ABC):
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def __full_length(cls) -> int:
-        return cls.__body_length() + 5  # body length + header length + footer length
-
-    @classmethod
     def decode(cls, data: bytes):
         """Decode bytes into message object"""
-        if len(data) < cls.__body_length():
-            raise BufferError("Buffer too short for message")
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.__body_length()])))
         msg.crc, = struct.unpack(">H", data[cls.__body_length():])
         return msg
 
     def encode(self) -> bytes:
         """Encode a message object to bytes"""
-        header = struct.pack(">BH", self.msg_type, type(self).__full_length())
         body = self._encode_body()
+        header = struct.pack(">BH", self.msg_type, len(body) + 5)
         header_and_body = header + body
         crc_calculated = crc16(header_and_body)
         crc = struct.pack(">H", crc_calculated)
         return header_and_body + crc
 
-    @abstractmethod
     def _encode_body(self) -> bytes:
-        return bytes()
+        return struct.pack(self.struct_format, *astuple(self))
 
 
 @dataclass
 class Heartbeat(Message):
-
     msg_type = 0x01
-
-    def _encode_body(self) -> bytes:
-        return bytes()
 
 
 @dataclass
 class HeartbeatResponse(Message):
-
     msg_type = 0x81
-
-    def _encode_body(self) -> bytes:
-        return bytes()
 
 
 @dataclass
 class NackResponse(Message):
-
     struct_format = ">B"
     error_messages = {0x01: 'Unknown message type', 0x02: 'Unknown message content', 0x03: 'Unknown attribute',
                       0x04: 'Message to short', 0x05: 'Message to long', 0x06: 'Message with illegal CRC',
@@ -85,9 +71,6 @@ class NackResponse(Message):
                       0x0A: 'File not found', 0x0B: 'Retransmit failed', 0x0C: 'File not opened'}
     msg_type = 0x82
     response_code: int
-
-    def _encode_body(self) -> bytes:
-        return struct.pack(self.struct_format, self.response_code)
 
     def error_message(self) -> str:
         if self.response_code is None:
@@ -97,13 +80,39 @@ class NackResponse(Message):
 
 @dataclass
 class GetAttribute(Message):
-
     struct_format = ">B"
     msg_type = 0x12
     attribute_id: int
 
-    def _encode_body(self):
-        return struct.pack(self.struct_format, self.attribute_id)
+
+@dataclass
+class GetAttributeResponse(Message):
+    struct_format = ">BQ"
+    msg_type = 0x92
+    length = None
+    attribute_id: int
+    changed_at: int
+    reporting: Reporting
+    value: Attribute
+
+    @classmethod
+    def decode(cls, data: bytes):
+        attribute_id, = struct.unpack(">B", data[0:1])
+        changed_at, = struct.unpack(">Q", data[1:9])
+        reporting = Reporting.decode(data[9:12])
+        length, =  struct.unpack(">B", data[12:13])
+        value = decode_attribute(attribute_id, data[13:])
+        msg = GetAttributeResponse(attribute_id=attribute_id, changed_at=changed_at, reporting=reporting,
+                                   value=value)
+        msg.length = length
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(self.struct_format, self.attribute_id, self.changed_at)
+        reporting_part = self.reporting.encode()
+        length_part = struct.pack(">B", self.value.length())
+        attribute_part = self.value.encode()
+        return first_part_of_body + reporting_part + length_part + attribute_part
 
 
 def decode(data: bytes) -> Message:
@@ -111,6 +120,9 @@ def decode(data: bytes) -> Message:
     Returns None if unknown message type"""
 
     message_type = data[0]
+    length, = struct.unpack(">H", data[1:3])
+    if len(data) < length:
+        raise BufferError("Buffer too short for message")
     if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])
     if message_type == HeartbeatResponse.msg_type:
@@ -119,4 +131,6 @@ def decode(data: bytes) -> Message:
         return NackResponse.decode(data[3:])
     if message_type == GetAttribute.msg_type:
         return GetAttribute.decode(data[3:])
+    if message_type == GetAttributeResponse.msg_type:
+        return GetAttributeResponse.decode(data[3:])
     return None
