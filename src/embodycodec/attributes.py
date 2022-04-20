@@ -266,58 +266,58 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
 
     if attribute_id == SerialNoAttribute.attribute_id:
         return SerialNoAttribute.decode(data)
-    elif attribute_id == FirmwareVersionAttribute.attribute_id:
+    if attribute_id == FirmwareVersionAttribute.attribute_id:
         return FirmwareVersionAttribute.decode(data)
-    elif attribute_id == BluetoothMacAttribute.attribute_id:
+    if attribute_id == BluetoothMacAttribute.attribute_id:
         return BluetoothMacAttribute.decode(data)
-    elif attribute_id == ModelAttribute.attribute_id:
+    if attribute_id == ModelAttribute.attribute_id:
         return ModelAttribute.decode(data)
-    elif attribute_id == VendorAttribute.attribute_id:
+    if attribute_id == VendorAttribute.attribute_id:
         return VendorAttribute.decode(data)
-    elif attribute_id == AfeSettingsAttribute.attribute_id:
+    if attribute_id == AfeSettingsAttribute.attribute_id:
         return AfeSettingsAttribute.decode(data)
-    elif attribute_id == AfeSettingsAllAttribute.attribute_id:
+    if attribute_id == AfeSettingsAllAttribute.attribute_id:
         return AfeSettingsAllAttribute.decode(data)
-    elif attribute_id == CurrentTimeAttribute.attribute_id:
+    if attribute_id == CurrentTimeAttribute.attribute_id:
         return CurrentTimeAttribute.decode(data)
-    elif attribute_id == MeasurementDeactivatedAttribute.attribute_id:
+    if attribute_id == MeasurementDeactivatedAttribute.attribute_id:
         return MeasurementDeactivatedAttribute.decode(data)
-    elif attribute_id == TraceLevelAttribute.attribute_id:
+    if attribute_id == TraceLevelAttribute.attribute_id:
         return TraceLevelAttribute.decode(data)
-    elif attribute_id == NoOfPpgValuesAttribute.attribute_id:
+    if attribute_id == NoOfPpgValuesAttribute.attribute_id:
         return NoOfPpgValuesAttribute.decode(data)
-    elif attribute_id == BatteryLevelAttribute.attribute_id:
+    if attribute_id == BatteryLevelAttribute.attribute_id:
         return BatteryLevelAttribute.decode(data)
-    elif attribute_id == PulseRawAllAttribute.attribute_id:
+    if attribute_id == PulseRawAllAttribute.attribute_id:
         return PulseRawAllAttribute.decode(data)
-    elif attribute_id == BloodPressureAttribute.attribute_id:
+    if attribute_id == BloodPressureAttribute.attribute_id:
         return BloodPressureAttribute.decode(data)
-    elif attribute_id == ImuAttribute.attribute_id:
+    if attribute_id == ImuAttribute.attribute_id:
         return ImuAttribute.decode(data)
-    elif attribute_id == HeartrateAttribute.attribute_id:
+    if attribute_id == HeartrateAttribute.attribute_id:
         return HeartrateAttribute.decode(data)
-    elif attribute_id == SleepModeAttribute.attribute_id:
+    if attribute_id == SleepModeAttribute.attribute_id:
         return SleepModeAttribute.decode(data)
-    elif attribute_id == BreathRateAttribute.attribute_id:
+    if attribute_id == BreathRateAttribute.attribute_id:
         return BreathRateAttribute.decode(data)
-    elif attribute_id == HeartRateVariabilityAttribute.attribute_id:
+    if attribute_id == HeartRateVariabilityAttribute.attribute_id:
         return HeartRateVariabilityAttribute.decode(data)
-    elif attribute_id == ChargeStateAttribute.attribute_id:
+    if attribute_id == ChargeStateAttribute.attribute_id:
         return ChargeStateAttribute.decode(data)
-    elif attribute_id == BeltOnBodyStateAttribute.attribute_id:
+    if attribute_id == BeltOnBodyStateAttribute.attribute_id:
         return BeltOnBodyStateAttribute.decode(data)
-    elif attribute_id == FirmwareUpdateProgressAttribute.attribute_id:
+    if attribute_id == FirmwareUpdateProgressAttribute.attribute_id:
         return FirmwareUpdateProgressAttribute.decode(data)
-    elif attribute_id == ImuRawAttribute.attribute_id:
+    if attribute_id == ImuRawAttribute.attribute_id:
         return ImuRawAttribute.decode(data)
-    elif attribute_id == HeartRateIntervalAttribute.attribute_id:
+    if attribute_id == HeartRateIntervalAttribute.attribute_id:
         return HeartRateIntervalAttribute.decode(data)
-    elif attribute_id == PulseRawAttribute.attribute_id:
+    if attribute_id == PulseRawAttribute.attribute_id:
         return PulseRawAttribute.decode(data)
-    elif attribute_id == AccRawAttribute.attribute_id:
+    if attribute_id == AccRawAttribute.attribute_id:
         return AccRawAttribute.decode(data)
-    elif attribute_id == GyroRawAttribute.attribute_id:
+    if attribute_id == GyroRawAttribute.attribute_id:
         return GyroRawAttribute.decode(data)
-    elif attribute_id == TemperatureAttribute.attribute_id:
+    if attribute_id == TemperatureAttribute.attribute_id:
         return TemperatureAttribute.decode(data)
     return None

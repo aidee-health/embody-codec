@@ -150,18 +150,18 @@ def decode(data: bytes) -> Message:
     length, = struct.unpack(">H", data[1:3])
     if len(data) < length:
         raise BufferError("Buffer too short for message")
-    elif message_type == Heartbeat.msg_type:
+    if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])
-    elif message_type == HeartbeatResponse.msg_type:
+    if message_type == HeartbeatResponse.msg_type:
         return HeartbeatResponse.decode(data[3:])
-    elif message_type == NackResponse.msg_type:
+    if message_type == NackResponse.msg_type:
         return NackResponse.decode(data[3:])
-    elif message_type == SetAttribute.msg_type:
+    if message_type == SetAttribute.msg_type:
         return SetAttribute.decode(data[3:])
-    elif message_type == SetAttributeResponse.msg_type:
+    if message_type == SetAttributeResponse.msg_type:
         return SetAttributeResponse.decode(data[3:])
-    elif message_type == GetAttribute.msg_type:
+    if message_type == GetAttribute.msg_type:
         return GetAttribute.decode(data[3:])
-    elif message_type == GetAttributeResponse.msg_type:
+    if message_type == GetAttributeResponse.msg_type:
         return GetAttributeResponse.decode(data[3:])
     return None
