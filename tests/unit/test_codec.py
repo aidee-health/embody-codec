@@ -77,7 +77,66 @@ class TestCodec(TestCase):
                                                                     b'\xa5\x26')
         self.assertEqual(decoded.value.value, 12345678)
 
+    def test_reset_attribute(self):
+        response = codec.ResetAttribute(0xA1)
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x13\x00\x06\xa1\x0b\xd6')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ResetAttribute)
 
+    def test_reset_attribute_response(self):
+        response = codec.ResetAttributeResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x93\x00\x05\xBD\x50')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ResetAttributeResponse)
+
+    def test_configure_reporting(self):
+        response = codec.ConfigureReporting(attribute_id=0x71, reporting=types.Reporting(interval=50, on_change=1))
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x14\x00\x09\x71\x00\x32\x01\xe8\x18')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ConfigureReporting)
+
+    def test_configure_reporting_response(self):
+        response = codec.ConfigureReportingResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x94\x00\x05\x38\xC0')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ConfigureReportingResponse)
+
+    def test_reset_reporting(self):
+        response = codec.ResetReporting(attribute_id=0xA1)
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x15\x00\x06\xA1\x2C\x4F')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ResetReporting)
+
+    def test_reset_reporting_response(self):
+        response = codec.ResetReportingResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x95\x00\x05\x0F\xF0')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.ResetReportingResponse)
+
+    def test_periodic_recording(self):
+        response = codec.PeriodicRecording(
+            types.Recording(day_start=0, day_end=23, day_interval=15, night_interval=20, recording_start=1,
+                            recording_stop=2))
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x16\x00\x0b\x00\x17\x0f\x14\x01\x02\x61\x9b')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.PeriodicRecording)
+
+    def test_periodic_recording_response(self):
+        response = codec.PeriodicRecordingResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\x96\x00\x05\x56\xA0')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.PeriodicRecordingResponse)
+
+
+# helper method for get_attribute_response tests
 def do_test_get_attribute_response_and_return_decoded(case: TestCase, attribute: attributes.Attribute,
                                                       expected_encoded: bytes):
     get_attribute_response = codec.GetAttributeResponse(attribute_id=attribute.attribute_id,

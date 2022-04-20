@@ -126,9 +126,9 @@ class GetAttributeResponse(Message):
     def decode(cls, data: bytes):
         attribute_id, = struct.unpack(">B", data[0:1])
         changed_at, = struct.unpack(">Q", data[1:9])
-        reporting = Reporting.decode(data[9:12])
-        length, =  struct.unpack(">B", data[12:13])
-        value = decode_attribute(attribute_id, data[13:])
+        reporting = Reporting.decode(data[9:9+Reporting.length()])
+        length, =  struct.unpack(">B", data[9+Reporting.length():9+Reporting.length()+1])
+        value = decode_attribute(attribute_id, data[9+Reporting.length()+1:])
         msg = GetAttributeResponse(attribute_id=attribute_id, changed_at=changed_at, reporting=reporting,
                                    value=value)
         msg.length = length
@@ -140,6 +140,74 @@ class GetAttributeResponse(Message):
         length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
         return first_part_of_body + reporting_part + length_part + attribute_part
+
+
+@dataclass
+class ResetAttribute(Message):
+    struct_format = ">B"
+    msg_type = 0x13
+    attribute_id: int
+
+
+@dataclass
+class ResetAttributeResponse(Message):
+    msg_type = 0x93
+
+
+@dataclass
+class ConfigureReporting(Message):
+    msg_type = 0x14
+    attribute_id: int
+    reporting: Reporting
+
+    @classmethod
+    def decode(cls, data: bytes):
+        attribute_id, = struct.unpack(">B", data[0:1])
+        reporting = Reporting.decode(data[1:1+Reporting.length()])
+        msg = ConfigureReporting(attribute_id=attribute_id, reporting=reporting)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">B", self.attribute_id)
+        reporting_part = self.reporting.encode()
+        return first_part_of_body + reporting_part
+
+
+@dataclass
+class ConfigureReportingResponse(Message):
+    msg_type = 0x94
+
+
+@dataclass
+class ResetReporting(Message):
+    struct_format = ">B"
+    msg_type = 0x15
+    attribute_id: int
+
+
+@dataclass
+class ResetReportingResponse(Message):
+    msg_type = 0x95
+
+
+@dataclass
+class PeriodicRecording(Message):
+    msg_type = 0x16
+    recording: Recording
+
+    @classmethod
+    def decode(cls, data: bytes):
+        recording = Recording.decode(data[0:Recording.length()])
+        msg = PeriodicRecording(recording=recording)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        return self.recording.encode()
+
+
+@dataclass
+class PeriodicRecordingResponse(Message):
+    msg_type = 0x96
 
 
 def decode(data: bytes) -> Message:
@@ -164,4 +232,20 @@ def decode(data: bytes) -> Message:
         return GetAttribute.decode(data[3:])
     if message_type == GetAttributeResponse.msg_type:
         return GetAttributeResponse.decode(data[3:])
+    if message_type == ResetAttribute.msg_type:
+        return ResetAttribute.decode(data[3:])
+    if message_type == ResetAttributeResponse.msg_type:
+        return ResetAttributeResponse.decode(data[3:])
+    if message_type == ConfigureReporting.msg_type:
+        return ConfigureReporting.decode(data[3:])
+    if message_type == ConfigureReportingResponse.msg_type:
+        return ConfigureReportingResponse.decode(data[3:])
+    if message_type == ResetReporting.msg_type:
+        return ResetReporting.decode(data[3:])
+    if message_type == ResetReportingResponse.msg_type:
+        return ResetReportingResponse.decode(data[3:])
+    if message_type == PeriodicRecording.msg_type:
+        return PeriodicRecording.decode(data[3:])
+    if message_type == PeriodicRecordingResponse.msg_type:
+        return PeriodicRecordingResponse.decode(data[3:])
     return None

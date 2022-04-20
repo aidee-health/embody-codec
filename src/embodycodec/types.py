@@ -94,6 +94,17 @@ class GyroRaw(ComplexType):
 
 
 @dataclass
+class Recording(ComplexType):
+    struct_format = ">BBBBBB"
+    day_start: int
+    day_end: int
+    day_interval: int
+    night_interval: int
+    recording_start: int
+    recording_stop: int
+
+
+@dataclass
 class AfeSettings(ComplexType):
     struct_format = ">BBBBIIif"
     rf_gain: int
