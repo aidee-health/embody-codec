@@ -70,6 +70,17 @@ class Imu(ComplexType):
 
 
 @dataclass
+class ImuRaw(ComplexType):
+    struct_format = ">hhhhhh"
+    acc_x: int = 0
+    acc_y: int = 0
+    acc_z: int = 0
+    gyr_x: int = 0
+    gyr_y: int = 0
+    gyr_z: int = 0
+
+
+@dataclass
 class AccRaw(ComplexType):
     struct_format = ">hhh"
     acc_x: int = 0

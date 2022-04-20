@@ -79,6 +79,34 @@ class NackResponse(Message):
 
 
 @dataclass
+class SetAttribute(Message):
+    msg_type = 0x11
+    length = None
+    attribute_id: int
+    value: Attribute
+
+    @classmethod
+    def decode(cls, data: bytes):
+        attribute_id, = struct.unpack(">B", data[0:1])
+        length, = struct.unpack(">B", data[1:2])
+        value = decode_attribute(attribute_id, data[2:])
+        msg = SetAttribute(attribute_id=attribute_id, value=value)
+        msg.length = length
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">B", self.attribute_id)
+        length_part = struct.pack(">B", self.value.length())
+        attribute_part = self.value.encode()
+        return first_part_of_body + length_part + attribute_part
+
+
+@dataclass
+class SetAttributeResponse(Message):
+    msg_type = 0x91
+
+
+@dataclass
 class GetAttribute(Message):
     struct_format = ">B"
     msg_type = 0x12
@@ -87,7 +115,6 @@ class GetAttribute(Message):
 
 @dataclass
 class GetAttributeResponse(Message):
-    struct_format = ">BQ"
     msg_type = 0x92
     length = None
     attribute_id: int
@@ -108,7 +135,7 @@ class GetAttributeResponse(Message):
         return msg
 
     def _encode_body(self) -> bytes:
-        first_part_of_body = struct.pack(self.struct_format, self.attribute_id, self.changed_at)
+        first_part_of_body = struct.pack(">BQ", self.attribute_id, self.changed_at)
         reporting_part = self.reporting.encode()
         length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
@@ -123,14 +150,18 @@ def decode(data: bytes) -> Message:
     length, = struct.unpack(">H", data[1:3])
     if len(data) < length:
         raise BufferError("Buffer too short for message")
-    if message_type == Heartbeat.msg_type:
+    elif message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[3:])
-    if message_type == HeartbeatResponse.msg_type:
+    elif message_type == HeartbeatResponse.msg_type:
         return HeartbeatResponse.decode(data[3:])
-    if message_type == NackResponse.msg_type:
+    elif message_type == NackResponse.msg_type:
         return NackResponse.decode(data[3:])
-    if message_type == GetAttribute.msg_type:
+    elif message_type == SetAttribute.msg_type:
+        return SetAttribute.decode(data[3:])
+    elif message_type == SetAttributeResponse.msg_type:
+        return SetAttributeResponse.decode(data[3:])
+    elif message_type == GetAttribute.msg_type:
         return GetAttribute.decode(data[3:])
-    if message_type == GetAttributeResponse.msg_type:
+    elif message_type == GetAttributeResponse.msg_type:
         return GetAttributeResponse.decode(data[3:])
     return None
