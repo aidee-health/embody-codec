@@ -81,7 +81,7 @@ class TestAttributes(TestCase):
                                         b'\x05')
 
     def test_encode_decode_heart_rate(self):
-        do_test_encode_decode_attribute(self, attributes.HeartrateAttribute(value=55), b'\x00\37')
+        do_test_encode_decode_attribute(self, attributes.HeartrateAttribute(value=55), b'\x00\x37')
 
     def test_encode_decode_sleep_mode(self):
         do_test_encode_decode_attribute(self, attributes.SleepModeAttribute(value=4), b'\x04')
@@ -130,7 +130,7 @@ class TestAttributes(TestCase):
         self.assertEqual(decoded.temp_celsius(), 25.0)
         decoded = do_test_encode_decode_attribute(self, attributes.TemperatureAttribute(value=-5120),
                                                   b'\xEC\x00')
-        self.assertEqual(decoded.temp_celsius(), 40.0)
+        self.assertEqual(decoded.temp_celsius(), -40.0)
 
 
 def do_test_encode_decode_attribute(test_case: TestCase, attribute: attributes.Attribute, expected_encoded: bytes):

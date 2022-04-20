@@ -14,19 +14,16 @@ class ComplexType(ABC):
 
     @classmethod
     def length(cls) -> int:
-        """Length of complex type"""
         return struct.calcsize(cls.struct_format)
 
     @classmethod
     def decode(cls, data: bytes):
-        """Decode bytes into complex type object"""
         if len(data) < cls.length():
             raise BufferError("Buffer too short for message")
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return msg
 
     def encode(self) -> bytes:
-        """Encode a complex type object to bytes"""
         return struct.pack(self.struct_format, *astuple(self))
 
 

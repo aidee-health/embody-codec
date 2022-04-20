@@ -26,14 +26,12 @@ class Attribute(ABC):
 
     @classmethod
     def decode(cls, data: bytes):
-        """Decode bytes into attribute object"""
         if len(data) < cls.length():
             raise BufferError("Buffer too short for message")
         attr = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return attr
 
     def encode(self) -> bytes:
-        """Encode an attribute object to bytes"""
         return struct.pack(self.struct_format, *astuple(self))
 
 
