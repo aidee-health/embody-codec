@@ -210,6 +210,36 @@ class PeriodicRecordingResponse(Message):
     msg_type = 0x96
 
 
+@dataclass
+class AttributeChanged(Message):
+    msg_type = 0x21
+    length = None
+    changed_at: int
+    attribute_id: int
+    value: Attribute
+
+    @classmethod
+    def decode(cls, data: bytes):
+        changed_at, = struct.unpack(">Q", data[0:8])
+        attribute_id, = struct.unpack(">B", data[8:9])
+        length, =  struct.unpack(">B", data[9:10])
+        value = decode_attribute(attribute_id, data[10:])
+        msg = AttributeChanged(changed_at=changed_at, attribute_id=attribute_id, value=value)
+        msg.length = length
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">QB", self.changed_at, self.attribute_id)
+        length_part = struct.pack(">B", self.value.length())
+        attribute_part = self.value.encode()
+        return first_part_of_body + length_part + attribute_part
+
+
+@dataclass
+class AttributeChangedResponse(Message):
+    msg_type = 0xA1
+
+
 def decode(data: bytes) -> Message:
     """Decodes a bytes object into proper message object - raises BufferError if data buffer is too short.
     Returns None if unknown message type"""
@@ -248,4 +278,8 @@ def decode(data: bytes) -> Message:
         return PeriodicRecording.decode(data[3:])
     if message_type == PeriodicRecordingResponse.msg_type:
         return PeriodicRecordingResponse.decode(data[3:])
+    if message_type == AttributeChanged.msg_type:
+        return AttributeChanged.decode(data[3:])
+    if message_type == AttributeChangedResponse.msg_type:
+        return AttributeChangedResponse.decode(data[3:])
     return None

@@ -135,6 +135,23 @@ class TestCodec(TestCase):
         decoded = codec.decode(encoded)
         self.assertIsInstance(decoded, codec.PeriodicRecordingResponse)
 
+    def test_attribute_changed(self):
+        response = codec.AttributeChanged(
+            changed_at=int(datetime.fromisoformat('2022-04-20 00:05:23.283+00:00').timestamp() * 1000),
+            attribute_id=attributes.BatteryLevelAttribute.attribute_id, value=attributes.BatteryLevelAttribute(50))
+        encoded = response.encode()
+        print(encoded.hex())
+        self.assertEqual(encoded, b'\x21\x00\x10\x00\x00\x01\x80\x44\x49\xb6\xd3\xa1\x01\x32\x2f\x06')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.AttributeChanged)
+
+    def test_attribute_changed_response(self):
+        response = codec.AttributeChangedResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\xA1\x00\x05\x16\x95')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.AttributeChangedResponse)
+
 
 # helper method for get_attribute_response tests
 def do_test_get_attribute_response_and_return_decoded(case: TestCase, attribute: attributes.Attribute,
