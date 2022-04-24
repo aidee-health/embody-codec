@@ -240,6 +240,213 @@ class AttributeChangedResponse(Message):
     msg_type = 0xA1
 
 
+@dataclass
+class RawPulseChanged(Message):
+    msg_type = 0x22
+    changed_at: int
+    value: PulseRawAll
+
+    @classmethod
+    def decode(cls, data: bytes):
+        changed_at, = struct.unpack(">H", data[0:2])
+        value = PulseRawAll.decode(data[2:])
+        msg = RawPulseChanged(changed_at=changed_at, value=value)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">H", self.changed_at)
+        raw_pulse_part = self.value.encode()
+        return first_part_of_body + raw_pulse_part
+
+
+@dataclass
+class RawPulseChangedResponse(Message):
+    msg_type = 0xA2
+
+
+@dataclass
+class Alarm(Message):
+    struct_format = ">QB"
+    alarm_types = {0x01: 'Low battery', 0x02: 'Device off body', 0x03: 'Device error'}
+    msg_type = 0x31
+    changed_at: int
+    alarm_type: int
+
+    def alarm_message(self) -> str:
+        if self.alarm_type is None:
+            return None
+        return self.alarm_types.get(self.alarm_type)
+
+
+@dataclass
+class AlarmResponse(Message):
+    msg_type = 0xB1
+
+
+@dataclass
+class ListFiles(Message):
+    msg_type = 0x41
+
+
+@dataclass
+class ListFilesResponse(Message):
+    struct_format = ">26cI"
+    msg_type = 0xC1
+    files: list[FileWithLength]
+
+    @classmethod
+    def decode(cls, data: bytes):
+        msg = ListFilesResponse(files=[])
+        pos = 0
+        while pos + FileWithLength.length() <= len(data):
+            msg.files.append(FileWithLength.decode(data[pos:pos + FileWithLength.length()]))
+            pos += FileWithLength.length()
+        return msg
+
+    def _encode_body(self) -> bytes:
+        body = b''
+        if self.files is None or len(self.files) == 0:
+            return b''
+        for file in self.files:
+            body += file.encode()
+        return body
+
+
+@dataclass
+class GetFile(Message):
+    msg_type = 0x42
+    file: File
+
+    @classmethod
+    def decode(cls, data: bytes):
+        value = File.decode(data)
+        msg = GetFile(file=value)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        return self.file.encode()
+
+
+@dataclass
+class GetFileResponse(Message):
+    msg_type = 0xC2
+
+
+@dataclass
+class SendFile(Message):
+    msg_type = 0x43
+    file_name: File
+    index: int
+    total_parts: int
+    payload: bytes
+
+    @classmethod
+    def decode(cls, data: bytes):
+        file_name = File.decode(data)
+        index, = struct.unpack(">H", data[File.length():File.length()+2])
+        total_parts, = struct.unpack(">H", data[File.length()+2:File.length()+4])
+        payload = data[File.length()+4:len(data)-2]
+        return SendFile(file_name=file_name, index=index, total_parts=total_parts, payload=payload)
+
+    def _encode_body(self) -> bytes:
+        body = self.file_name.encode()
+        body += struct.pack(">H", self.index)
+        body += struct.pack(">H", self.total_parts)
+        body += self.payload
+        return body
+
+
+@dataclass
+class SendFileResponse(Message):
+    struct_format = ">H"
+    msg_type = 0xC3
+    crc: int
+
+
+@dataclass
+class DeleteFile(Message):
+    msg_type = 0x44
+    file: File
+
+    @classmethod
+    def decode(cls, data: bytes):
+        value = File.decode(data)
+        msg = DeleteFile(file=value)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        return self.file.encode()
+
+
+@dataclass
+class DeleteFileResponse(Message):
+    msg_type = 0xC4
+
+
+@dataclass
+class GetFileUart(Message):
+    msg_type = 0x45
+    file: File
+
+    @classmethod
+    def decode(cls, data: bytes):
+        value = File.decode(data)
+        msg = GetFileUart(file=value)
+        return msg
+
+    def _encode_body(self) -> bytes:
+        return self.file.encode()
+
+
+@dataclass
+class GetFileUartResponse(Message):
+    msg_type = 0xC5
+
+
+@dataclass
+class DeleteAllFiles(Message):
+    msg_type = 0x46
+
+
+@dataclass
+class DeleteAllFilesResponse(Message):
+    msg_type = 0xC6
+
+
+@dataclass
+class ReformatDisk(Message):
+    msg_type = 0x47
+
+
+@dataclass
+class ReformatDiskResponse(Message):
+    msg_type = 0xC7
+
+
+@dataclass
+class ExecuteCommand(Message):
+    struct_format = ">B"
+    RESET_DEVICE = 0x01
+    REBOOT_DEVICE = 0x02
+    command_types = {0x01: 'Reset device', 0x02: 'Reboot device', 0xA1: 'AFE: Read all registers',
+                     0xA2: 'AFE: Write register <Addr (1 byte)><Value (4 bytes)>',
+                     0xA3: 'AFE: Calibration command <Cmd (1 byte))', 0xA4: 'AFE: Gain setting <Cmd (1 byte)'}
+    msg_type = 0x51
+    command_id: int
+
+    def command_message(self) -> str:
+        if self.command_id is None:
+            return None
+        return self.command_types.get(self.alarm_type)
+
+
+@dataclass
+class ExecuteCommandResponse(Message):
+    struct_format = ">B"
+    msg_type = 0xD1
+    response_code: int
+
+
 def decode(data: bytes) -> Message:
     """Decodes a bytes object into proper message object - raises BufferError if data buffer is too short.
     Returns None if unknown message type"""
@@ -282,4 +489,40 @@ def decode(data: bytes) -> Message:
         return AttributeChanged.decode(data[3:])
     if message_type == AttributeChangedResponse.msg_type:
         return AttributeChangedResponse.decode(data[3:])
+    if message_type == RawPulseChanged.msg_type:
+        return RawPulseChanged.decode(data[3:])
+    if message_type == RawPulseChangedResponse.msg_type:
+        return RawPulseChangedResponse.decode(data[3:])
+    if message_type == Alarm.msg_type:
+        return Alarm.decode(data[3:])
+    if message_type == AlarmResponse.msg_type:
+        return AlarmResponse.decode(data[3:])
+    if message_type == ListFiles.msg_type:
+        return ListFiles.decode(data[3:])
+    if message_type == ListFilesResponse.msg_type:
+        return ListFilesResponse.decode(data[3:])
+    if message_type == GetFile.msg_type:
+        return GetFile.decode(data[3:])
+    if message_type == GetFileResponse.msg_type:
+        return GetFileResponse.decode(data[3:])
+    if message_type == SendFile.msg_type:
+        return SendFile.decode(data[3:])
+    if message_type == SendFileResponse.msg_type:
+        return SendFileResponse.decode(data[3:])
+    if message_type == DeleteFile.msg_type:
+        return DeleteFile.decode(data[3:])
+    if message_type == DeleteFileResponse.msg_type:
+        return DeleteFileResponse.decode(data[3:])
+    if message_type == GetFileUart.msg_type:
+        return GetFileUart.decode(data[3:])
+    if message_type == GetFileUartResponse.msg_type:
+        return GetFileUartResponse.decode(data[3:])
+    if message_type == ReformatDisk.msg_type:
+        return ReformatDisk.decode(data[3:])
+    if message_type == ReformatDiskResponse.msg_type:
+        return ReformatDiskResponse.decode(data[3:])
+    if message_type == ExecuteCommand.msg_type:
+        return ExecuteCommand.decode(data[3:])
+    if message_type == ExecuteCommandResponse.msg_type:
+        return ExecuteCommandResponse.decode(data[3:])
     return None

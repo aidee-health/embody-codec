@@ -132,3 +132,28 @@ class AfeSettingsAll(ComplexType):
     off_dac2: int
     off_dac3: int
     relative_gain: float
+
+
+@dataclass
+class File(ComplexType):
+    struct_format = ">26s"
+    file_name: str
+
+    @classmethod
+    def decode(cls, data: bytes):
+        msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
+        if msg.file_name is not None and isinstance(msg.file_name, bytes):
+            msg.file_name = msg.file_name.decode('utf-8').rstrip('\0')
+        return msg
+
+    def encode(self) -> bytes:
+        return struct.pack(self.struct_format, self.file_name.encode('utf-8'))
+
+
+@dataclass
+class FileWithLength(File):
+    struct_format = File.struct_format + "I"
+    file_size: int
+
+    def encode(self) -> bytes:
+        return struct.pack(self.struct_format, self.file_name.encode('utf-8'), self.file_size)
