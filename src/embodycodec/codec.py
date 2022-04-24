@@ -8,6 +8,7 @@ messages.
 from abc import ABC
 import struct
 from dataclasses import dataclass, astuple
+from typing import List
 from .crc import crc16
 from .attributes import *
 from .types import *
@@ -292,7 +293,7 @@ class ListFiles(Message):
 class ListFilesResponse(Message):
     struct_format = ">26cI"
     msg_type = 0xC1
-    files: list[FileWithLength]
+    files: List[FileWithLength]
 
     @classmethod
     def decode(cls, data: bytes):
