@@ -22,8 +22,34 @@ requirements-local.txt:
 
 embodycodec >= 0.0.1
 ```
-
 Then you can reference this from your requirements.txt file with `-r requirements-local.txt` on a separate line.
+
+:warning: **Note!** We've experienced some issues with the recipe above. As an alternative, 
+do the following to use editable mode:
+
+requirements-local.txt:
+```
+--editable ../embody-protocol-codec
+embodycodec >= 0.0.1
+```
+
+requirements.txt:
+```
+-r requirements-local.txt
+
+(your other packages goes here)
+```
+
+Then, run `pip install -r requirements.txt`
+
+# Generating distribution archives
+
+To generate a new distribution archive, run:
+```
+python3 -m pip install --upgrade build
+python3 -m build
+```
+
 
 # Resources
 
