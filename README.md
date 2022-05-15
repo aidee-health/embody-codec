@@ -10,7 +10,12 @@ projects, install it from the file system as described in the
 
 Example:
 ```
-pip install --no-index --find-links=/local/dir/embody-protocol-codec embodycodec 
+pip install --no-index --find-links=../embody-protocol-codec embodycodec 
+```
+
+:warning: **Note!** If the above does not work, try this to use editable mode: 
+```
+pip install --editable=../embody-protocol-codec embodycodec 
 ```
 
 You can also create a separate requirements-local.txt for instance, to accomplish the same with requirements. 
