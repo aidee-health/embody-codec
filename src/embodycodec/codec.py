@@ -178,6 +178,10 @@ class ConfigureReporting(Message):
 class ConfigureReportingResponse(Message):
     msg_type = 0x94
 
+    @classmethod
+    def decode(cls, data: bytes):
+        return ConfigureReportingResponse()
+
 
 @dataclass
 class ResetReporting(Message):
@@ -245,12 +249,12 @@ class AttributeChangedResponse(Message):
 class RawPulseChanged(Message):
     msg_type = 0x22
     changed_at: int
-    value: PulseRawAll
+    value: PulseRaw
 
     @classmethod
     def decode(cls, data: bytes):
         changed_at, = struct.unpack(">H", data[0:2])
-        value = PulseRawAll.decode(data[2:])
+        value = PulseRaw.decode(data[2:])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
         return msg
 
@@ -297,12 +301,19 @@ class ListFilesResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes):
+        # ListFiles length
+        length, = struct.unpack(">H", data[0:2])
         msg = ListFilesResponse(files=[])
-        pos = 0
-        while pos + FileWithLength.length() <= len(data):
-            msg.files.append(FileWithLength.decode(data[pos:pos + FileWithLength.length()]))
-            pos += FileWithLength.length()
-        return msg
+
+        if length == 5:
+            # Empty file list
+            return msg
+        else:
+            pos = 2
+            while pos + FileWithLength.length() <= length - 1:
+                msg.files.append(FileWithLength.decode(data[pos:pos + FileWithLength.length()]))
+                pos += FileWithLength.length()
+            return msg
 
     def _encode_body(self) -> bytes:
         body = b''
@@ -426,7 +437,6 @@ class ReformatDiskResponse(Message):
 
 @dataclass
 class ExecuteCommand(Message):
-    struct_format = ">B"
     RESET_DEVICE = 0x01
     REBOOT_DEVICE = 0x02
     command_types = {0x01: 'Reset device', 0x02: 'Reboot device', 0xA1: 'AFE: Read all registers',
@@ -434,18 +444,62 @@ class ExecuteCommand(Message):
                      0xA3: 'AFE: Calibration command <Cmd (1 byte))', 0xA4: 'AFE: Gain setting <Cmd (1 byte)'}
     msg_type = 0x51
     command_id: int
+    value: None
 
     def command_message(self) -> str:
         if self.command_id is None:
             return None
         return self.command_types.get(self.alarm_type)
 
+    @classmethod
+    def decode(cls, data: bytes):
+        command_id, = struct.unpack(">B", data[0:1])
+        value = decode_executive_command_response(command_id, data[1:])
+        return ExecuteCommand(command_id=command_id, value=value)
+
+    def _encode_body(self) -> bytes:
+        if self.command_id == ExecuteCommandType.afe_calibration_command.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        elif self.command_id == ExecuteCommandType.afe_gain_setting.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        elif self.command_id == ExecuteCommandType.afe_write_register.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            address_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">I", self.value[1])
+            return attribute_part + address_part + value_part
+
+        else:
+            attribute_part = struct.pack(">B", self.command_id)
+            return attribute_part
+
 
 @dataclass
 class ExecuteCommandResponse(Message):
-    struct_format = ">B"
     msg_type = 0xD1
     response_code: int
+    value: None
+
+    @classmethod
+    def decode(cls, data: bytes):
+        response_code, = struct.unpack(">B", data[0:1])
+        value = decode_executive_command_response(response_code, data[1:])
+        return ExecuteCommandResponse(response_code=response_code, value=value)
+
+    def _encode_body(self) -> bytes:
+        if self.response_code == ExecuteCommandType.afe_read_all_registers.value:
+            attribute_part = struct.pack(">B", self.response_code)
+            address_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">I", self.value[1])
+            return attribute_part + address_part + value_part
+        else:
+            attribute_part = struct.pack(">B", self.response_code)
+            return attribute_part
 
 
 def decode(data: bytes) -> Message:
@@ -455,75 +509,75 @@ def decode(data: bytes) -> Message:
     message_type = data[0]
     length, = struct.unpack(">H", data[1:3])
     if len(data) < length:
-        raise BufferError("Buffer too short for message")
+        raise BufferError(f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes")
     if message_type == Heartbeat.msg_type:
-        return Heartbeat.decode(data[3:])
+        return Heartbeat.decode(data[3:]), length
     if message_type == HeartbeatResponse.msg_type:
-        return HeartbeatResponse.decode(data[3:])
+        return HeartbeatResponse.decode(data[3:]), length
     if message_type == NackResponse.msg_type:
-        return NackResponse.decode(data[3:])
+        return NackResponse.decode(data[3:]), length
     if message_type == SetAttribute.msg_type:
-        return SetAttribute.decode(data[3:])
+        return SetAttribute.decode(data[3:]), length
     if message_type == SetAttributeResponse.msg_type:
-        return SetAttributeResponse.decode(data[3:])
+        return SetAttributeResponse.decode(data[3:]), length
     if message_type == GetAttribute.msg_type:
-        return GetAttribute.decode(data[3:])
+        return GetAttribute.decode(data[3:]), length
     if message_type == GetAttributeResponse.msg_type:
-        return GetAttributeResponse.decode(data[3:])
+        return GetAttributeResponse.decode(data[3:]), length
     if message_type == ResetAttribute.msg_type:
-        return ResetAttribute.decode(data[3:])
+        return ResetAttribute.decode(data[3:]), length
     if message_type == ResetAttributeResponse.msg_type:
-        return ResetAttributeResponse.decode(data[3:])
+        return ResetAttributeResponse.decode(data[3:]), length
     if message_type == ConfigureReporting.msg_type:
-        return ConfigureReporting.decode(data[3:])
+        return ConfigureReporting.decode(data[3:]), length
     if message_type == ConfigureReportingResponse.msg_type:
-        return ConfigureReportingResponse.decode(data[3:])
+        return ConfigureReportingResponse.decode(data[3:]), length
     if message_type == ResetReporting.msg_type:
-        return ResetReporting.decode(data[3:])
+        return ResetReporting.decode(data[3:]), length
     if message_type == ResetReportingResponse.msg_type:
-        return ResetReportingResponse.decode(data[3:])
+        return ResetReportingResponse.decode(data[3:]), length
     if message_type == PeriodicRecording.msg_type:
-        return PeriodicRecording.decode(data[3:])
+        return PeriodicRecording.decode(data[3:]), length
     if message_type == PeriodicRecordingResponse.msg_type:
-        return PeriodicRecordingResponse.decode(data[3:])
+        return PeriodicRecordingResponse.decode(data[3:]), length
     if message_type == AttributeChanged.msg_type:
-        return AttributeChanged.decode(data[3:])
+        return AttributeChanged.decode(data[3:]), length
     if message_type == AttributeChangedResponse.msg_type:
-        return AttributeChangedResponse.decode(data[3:])
+        return AttributeChangedResponse.decode(data[3:]), length
     if message_type == RawPulseChanged.msg_type:
-        return RawPulseChanged.decode(data[3:])
+        return RawPulseChanged.decode(data[3:]), length
     if message_type == RawPulseChangedResponse.msg_type:
-        return RawPulseChangedResponse.decode(data[3:])
+        return RawPulseChangedResponse.decode(data[3:]), length
     if message_type == Alarm.msg_type:
-        return Alarm.decode(data[3:])
+        return Alarm.decode(data[3:]), length
     if message_type == AlarmResponse.msg_type:
-        return AlarmResponse.decode(data[3:])
+        return AlarmResponse.decode(data[3:]), length
     if message_type == ListFiles.msg_type:
-        return ListFiles.decode(data[3:])
+        return ListFiles.decode(data[3:]), length
     if message_type == ListFilesResponse.msg_type:
-        return ListFilesResponse.decode(data[3:])
+        return ListFilesResponse.decode(data[1:]), length
     if message_type == GetFile.msg_type:
-        return GetFile.decode(data[3:])
+        return GetFile.decode(data[3:]), length
     if message_type == GetFileResponse.msg_type:
-        return GetFileResponse.decode(data[3:])
+        return GetFileResponse.decode(data[3:]), length
     if message_type == SendFile.msg_type:
-        return SendFile.decode(data[3:])
+        return SendFile.decode(data[3:]), length
     if message_type == SendFileResponse.msg_type:
-        return SendFileResponse.decode(data[3:])
+        return SendFileResponse.decode(data[3:]), length
     if message_type == DeleteFile.msg_type:
-        return DeleteFile.decode(data[3:])
+        return DeleteFile.decode(data[3:]), length
     if message_type == DeleteFileResponse.msg_type:
-        return DeleteFileResponse.decode(data[3:])
+        return DeleteFileResponse.decode(data[3:]), length
     if message_type == GetFileUart.msg_type:
-        return GetFileUart.decode(data[3:])
+        return GetFileUart.decode(data[3:]), length
     if message_type == GetFileUartResponse.msg_type:
-        return GetFileUartResponse.decode(data[3:])
+        return GetFileUartResponse.decode(data[3:]), length
     if message_type == ReformatDisk.msg_type:
-        return ReformatDisk.decode(data[3:])
+        return ReformatDisk.decode(data[3:]), length
     if message_type == ReformatDiskResponse.msg_type:
-        return ReformatDiskResponse.decode(data[3:])
+        return ReformatDiskResponse.decode(data[3:]), length
     if message_type == ExecuteCommand.msg_type:
-        return ExecuteCommand.decode(data[3:])
+        return ExecuteCommand.decode(data[3:]), length
     if message_type == ExecuteCommandResponse.msg_type:
-        return ExecuteCommandResponse.decode(data[3:])
+        return ExecuteCommandResponse.decode(data[3:]), length
     return None

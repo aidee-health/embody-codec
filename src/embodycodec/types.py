@@ -3,7 +3,17 @@
 
 from abc import ABC
 import struct
+import enum
 from dataclasses import dataclass, astuple
+
+
+class ExecuteCommandType(enum.Enum):
+    reset_device = 0x01
+    reboot_device = 0x02
+    afe_read_all_registers = 0xA1
+    afe_write_register = 0xA2
+    afe_calibration_command = 0xA3
+    afe_gain_setting = 0xA4
 
 
 @dataclass
@@ -19,7 +29,7 @@ class ComplexType(ABC):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError("Buffer too short for message")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {cls.length} bytes")
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return msg
 
@@ -102,6 +112,19 @@ class Recording(ComplexType):
     night_interval: int
     recording_start: int
     recording_stop: int
+
+
+@dataclass
+class Diagnostics(ComplexType):
+    struct_format = ">HhHHIIII"
+    rep_soc: int
+    avg_current: int
+    rep_cap: int
+    full_cap: int
+    tte: int
+    ttf: int
+    voltage: int
+    avg_voltage: int
 
 
 @dataclass
