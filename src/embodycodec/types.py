@@ -8,12 +8,12 @@ from dataclasses import dataclass, astuple
 
 
 class ExecuteCommandType(enum.Enum):
-    reset_device = 0x01
-    reboot_device = 0x02
-    afe_read_all_registers = 0xA1
-    afe_write_register = 0xA2
-    afe_calibration_command = 0xA3
-    afe_gain_setting = 0xA4
+    RESET_DEVICE = 0x01
+    REBOOT_DEVICE = 0x02
+    AFE_READ_ALL_REGISTERS = 0xA1
+    AFE_WRITE_REGISTER = 0xA2
+    AFE_CALIBRATION_COMMAND = 0xA3
+    AFE_GAIN_SETTING = 0xA4
 
 
 @dataclass

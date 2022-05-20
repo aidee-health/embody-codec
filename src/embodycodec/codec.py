@@ -305,15 +305,12 @@ class ListFilesResponse(Message):
         length, = struct.unpack(">H", data[0:2])
         msg = ListFilesResponse(files=[])
 
-        if length == 5:
-            # Empty file list
-            return msg
-        else:
+        if length > 5:
             pos = 2
             while pos + FileWithLength.length() <= length - 1:
                 msg.files.append(FileWithLength.decode(data[pos:pos + FileWithLength.length()]))
                 pos += FileWithLength.length()
-            return msg
+        return msg
 
     def _encode_body(self) -> bytes:
         body = b''
@@ -458,25 +455,24 @@ class ExecuteCommand(Message):
         return ExecuteCommand(command_id=command_id, value=value)
 
     def _encode_body(self) -> bytes:
-        if self.command_id == ExecuteCommandType.afe_calibration_command.value:
+        if self.command_id == ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        elif self.command_id == ExecuteCommandType.afe_gain_setting.value:
+        if self.command_id == ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        elif self.command_id == ExecuteCommandType.afe_write_register.value:
+        if self.command_id == ExecuteCommandType.AFE_WRITE_REGISTER.value:
             attribute_part = struct.pack(">B", self.command_id)
             address_part = struct.pack(">B", self.value[0])
             value_part = struct.pack(">I", self.value[1])
             return attribute_part + address_part + value_part
 
-        else:
-            attribute_part = struct.pack(">B", self.command_id)
-            return attribute_part
+        attribute_part = struct.pack(">B", self.command_id)
+        return attribute_part
 
 
 @dataclass
@@ -492,14 +488,14 @@ class ExecuteCommandResponse(Message):
         return ExecuteCommandResponse(response_code=response_code, value=value)
 
     def _encode_body(self) -> bytes:
-        if self.response_code == ExecuteCommandType.afe_read_all_registers.value:
+        if self.response_code == ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
             attribute_part = struct.pack(">B", self.response_code)
             address_part = struct.pack(">B", self.value[0])
             value_part = struct.pack(">I", self.value[1])
             return attribute_part + address_part + value_part
-        else:
-            attribute_part = struct.pack(">B", self.response_code)
-            return attribute_part
+        
+        attribute_part = struct.pack(">B", self.response_code)
+        return attribute_part
 
 
 def decode(data: bytes) -> Message:
