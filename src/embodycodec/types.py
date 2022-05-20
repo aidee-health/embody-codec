@@ -166,7 +166,7 @@ class File(ComplexType):
     def decode(cls, data: bytes):
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         if msg.file_name is not None and isinstance(msg.file_name, bytes):
-            msg.file_name = msg.file_name.decode('utf-8').rstrip('\0')
+            msg.file_name = msg.file_name.split(b'\0')[0].decode('utf-8')
         return msg
 
     def encode(self) -> bytes:
