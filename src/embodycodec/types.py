@@ -3,7 +3,17 @@
 
 from abc import ABC
 import struct
+import enum
 from dataclasses import dataclass, astuple
+
+
+class ExecuteCommandType(enum.Enum):
+    RESET_DEVICE = 0x01
+    REBOOT_DEVICE = 0x02
+    AFE_READ_ALL_REGISTERS = 0xA1
+    AFE_WRITE_REGISTER = 0xA2
+    AFE_CALIBRATION_COMMAND = 0xA3
+    AFE_GAIN_SETTING = 0xA4
 
 
 @dataclass
@@ -19,7 +29,7 @@ class ComplexType(ABC):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError("Buffer too short for message")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {cls.length} bytes")
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return msg
 
@@ -105,6 +115,19 @@ class Recording(ComplexType):
 
 
 @dataclass
+class Diagnostics(ComplexType):
+    struct_format = ">HhHHIIII"
+    rep_soc: int
+    avg_current: int
+    rep_cap: int
+    full_cap: int
+    tte: int
+    ttf: int
+    voltage: int
+    avg_voltage: int
+
+
+@dataclass
 class AfeSettings(ComplexType):
     struct_format = ">BBBBIIif"
     rf_gain: int
@@ -143,7 +166,7 @@ class File(ComplexType):
     def decode(cls, data: bytes):
         msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         if msg.file_name is not None and isinstance(msg.file_name, bytes):
-            msg.file_name = msg.file_name.decode('utf-8').rstrip('\0')
+            msg.file_name = msg.file_name.split(b'\x00', maxsplit=1)[0].decode('utf-8')
         return msg
 
     def encode(self) -> bytes:

@@ -27,7 +27,7 @@ class Attribute(ABC):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError("Buffer too short for message")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {cls.length} bytes")
         attr = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return attr
 
@@ -258,6 +258,31 @@ class TemperatureAttribute(Attribute):
         return self.value * 0.0078125
 
 
+@dataclass
+class DiagnosticsAttribute(ComplexTypeAttribute):
+    struct_format = Diagnostics.struct_format
+    attribute_id = 0xB5
+    value: Diagnostics
+
+
+@dataclass
+class ExecuteCommandResponseAfeReadAllRegsAttribute(Attribute):
+    attribute_id = 0xA1
+    struct_format = ">BI"
+    address: int
+    value: int
+
+
+def decode_executive_command_response(attribute_id, data: bytes) -> Attribute:
+    """Decodes a bytes object into proper attribute object - raises BufferError if data buffer is too short.
+    Returns None if unknown attribute"""
+
+    if attribute_id == ExecuteCommandResponseAfeReadAllRegsAttribute.attribute_id:
+        return ExecuteCommandResponseAfeReadAllRegsAttribute.decode(data)
+    
+    return None
+
+
 def decode_attribute(attribute_id, data: bytes) -> Attribute:
     """Decodes a bytes object into proper attribute object - raises BufferError if data buffer is too short.
     Returns None if unknown attribute"""
@@ -318,4 +343,6 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return GyroRawAttribute.decode(data)
     if attribute_id == TemperatureAttribute.attribute_id:
         return TemperatureAttribute.decode(data)
+    if attribute_id == DiagnosticsAttribute.attribute_id:
+        return DiagnosticsAttribute.decode(data)
     return None
