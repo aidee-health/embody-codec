@@ -2,50 +2,31 @@
 
 This is a Python based implementation library for the EmBody/HyperSension communication protocol.
 
-# Installing package with pip
+# Installing package with pip from github
 
-This package is not distributed to PyPi as a regular open source Python package. To use this package in other
-projects, install it from the file system as described in the 
-[Pip Documentation](https://pip.pypa.io/en/latest/cli/pip_install/).
+This package is not distributed to PyPi as a regular open source Python package. 
 
-Example:
-```
-pip install --no-index --find-links=../embody-protocol-codec embodycodec 
-```
+To use this package in other projects, install it from its Github repository, either from the command line:
 
-:warning: **Note!** If the above does not work, try this to use editable mode: 
 ```
-pip install --editable=../embody-protocol-codec embodycodec 
+pip install git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec 
 ```
 
-You can also create a separate requirements-local.txt for instance, to accomplish the same with requirements. 
-
-requirements-local.txt:
+Or you can add it to your `requirements.txt` (just the URL to the repository):
 ```
---no-index
---find-links=/local/dir/embody-protocol-codec
-
-embodycodec >= 0.0.1
-```
-Then you can reference this from your requirements.txt file with `-r requirements-local.txt` on a separate line.
-
-:warning: **Note!** We've experienced some issues with the recipe above. As an alternative, 
-do the following to use editable mode:
-
-requirements-local.txt:
-```
---editable ../embody-protocol-codec
-embodycodec >= 0.0.1
-```
-
-requirements.txt:
-```
--r requirements-local.txt
-
-(your other packages goes here)
+git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec 
 ```
 
 Then, run `pip install -r requirements.txt`
+
+:warning: **Note!** This installs the latest version from master. You can also use any tag, commit id or git ref like
+this:
+
+```
+git+https://github.com/aidee-health/embody-protocol-codec@v0.0.1#egg=embodycodec
+git+https://github.com/aidee-health/embody-protocol-codec@da39a3ee5e6b4b0d325ef95601890afd80709#egg=embodycodec
+git+https://github.com/aidee-health/embody-protocol-codec@refs/pull/123/head#egg=embodycodec
+```
 
 # Generating distribution archives
 
@@ -55,9 +36,9 @@ python3 -m pip install --upgrade build
 python3 -m build
 ```
 
-
 # Resources
 
 * [Python Package tutorial](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
 * [Struct documentation with pack/unpack and format options](https://docs.python.org/3/library/struct.html)
 * [Best practices for project structure according to pytest](https://docs.pytest.org/en/latest/explanation/goodpractices.html)
+* [Using GitHub as a private PiPI server](https://medium.com/network-letters/using-github-as-a-private-python-package-index-server-798a6e1cfdef)
