@@ -441,4 +441,5 @@ def do_test_get_attribute_response_and_return_decoded(case: TestCase, attribute:
     case.assertEqual(decoded.changed_at, get_attribute_response.changed_at)
     case.assertEqual(decoded.value, get_attribute_response.value)
     case.assertEqual(decoded.reporting, get_attribute_response.reporting)
+    case.assertEqual(decoded.length, 26)
     return decoded

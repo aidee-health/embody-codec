@@ -132,6 +132,12 @@ class TestAttributes(TestCase):
                                                   b'\xEC\x00')
         self.assertEqual(decoded.temp_celsius(), -40.0)
 
+    def test_encode_decode_diagnostics(self):
+        do_test_encode_decode_attribute(self, attributes.DiagnosticsAttribute(
+            value=types.Diagnostics(rep_soc=9173, avg_current=-375, rep_cap=29350, full_cap=32000, 
+            tte=281278112, ttf=368634368, voltage=406125, avg_voltage=406039)),
+            b'#\xd5\xfe\x89r\xa6}\x00\x10\xc3\xf6\xa0\x15\xf8\xea\x00\x00\x062m\x00\x062\x17')
+
 
 def do_test_encode_decode_attribute(test_case: TestCase, attribute: attributes.Attribute, expected_encoded: bytes):
     encoded = attribute.encode()

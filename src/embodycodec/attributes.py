@@ -27,7 +27,8 @@ class Attribute(ABC):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {cls.length} bytes")
+            raise BufferError(f"Attribute buffer too short for message. \
+                                Received {len(data)} bytes, expected {cls.length} bytes")
         attr = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return attr
 
