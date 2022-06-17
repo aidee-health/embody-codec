@@ -135,11 +135,11 @@ class GetAttributeResponse(Message):
         attribute_id, = struct.unpack(">B", data[pos+0:pos+1])
         changed_at, = struct.unpack(">Q", data[pos+1:pos+9])
         reporting = Reporting.decode(data[pos+9:pos+9+Reporting.length()])
-        length, =  struct.unpack(">B", data[pos+9+Reporting.length():pos+9+Reporting.length()+1])
+        # length, =  struct.unpack(">B", data[pos+9+Reporting.length():pos+9+Reporting.length()+1])
         value = decode_attribute(attribute_id, data[pos+9+Reporting.length()+1:])
         msg = GetAttributeResponse(attribute_id=attribute_id, changed_at=changed_at, reporting=reporting,
                                    value=value)
-        msg.length = length
+        msg.length, = struct.unpack(">H", data[:2])
         return msg
 
     def _encode_body(self) -> bytes:
