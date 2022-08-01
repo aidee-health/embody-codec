@@ -9,12 +9,12 @@ This package is not distributed to PyPi as a regular open source Python package.
 To use this package in other projects, install it from its Github repository, either from the command line:
 
 ```
-pip install git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec 
+pip install "git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec" 
 ```
 
 Or you can add it to your `requirements.txt` (just the URL to the repository):
 ```
-git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec 
+git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec
 ```
 
 Then, run `pip install -r requirements.txt`
