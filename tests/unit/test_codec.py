@@ -178,19 +178,28 @@ class TestCodec(TestCase):
         self.assertEqual(decoded.length, 5)
         self.assertEqual(decoded, response)
 
-    def test_raw_pulse_changed(self):
+    def test_raw_pulse_changed_1_ppg(self):
         response = codec.RawPulseChanged(
             changed_at=1,
             value=types.PulseRaw(ecg=43214321, ppg=123456789))
-            # value=types.PulseRawAll(ecg=43214321, ppg_green=123456789, ppg_red=987654321, ppg_ir=432198765))
         encoded = response.encode()
         self.assertEqual(encoded,
                          b'"\x00\x0f\x00\x01\x02\x93e\xf1\x07[\xcd\x15p\x84')
-        # self.assertEqual(encoded,
-        #                  b'\x22\x00\x17\x00\x01\x02\x93\x65\xF1\x07\x5B\xCD\x15\x3A\xDE\x68\xB1\x19\xC2\xD4\x6D\xCC\x8C')
         decoded = codec.decode(encoded)
         self.assertIsInstance(decoded, codec.RawPulseChanged)
         self.assertEqual(decoded.length, 15)
+        self.assertEqual(decoded, response)
+
+    def test_raw_pulse_changed_3_ppgs(self):
+        response = codec.RawPulseChanged(
+            changed_at=1,
+            value=types.PulseRawAll(ecg=43214321, ppg_green=123456789, ppg_red=987654321, ppg_ir=432198765))
+        encoded = response.encode()
+        self.assertEqual(encoded,
+                         b'\x22\x00\x17\x00\x01\x02\x93\x65\xF1\x07\x5B\xCD\x15\x3A\xDE\x68\xB1\x19\xC2\xD4\x6D\xCC\x8C')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.RawPulseChanged)
+        self.assertEqual(decoded.length, 23)
         self.assertEqual(decoded, response)
 
     def test_raw_pulse_changed_response(self):

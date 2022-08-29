@@ -266,11 +266,17 @@ class RawPulseChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
+        pos = 2 # offset to start of body (skips length field (2B))
+        header_crc = 7 # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
         changed_at, = struct.unpack(">H", data[pos+0:pos+2])
-        value = PulseRaw.decode(data[pos+2:])
+        len, = struct.unpack(">H", data[0:pos])
+        # Determine if payload contains 1 or 3 PPGs
+        if len - header_crc == PulseRawAll.length():
+            value = PulseRawAll.decode(data[pos+2:])
+        else:
+            value = PulseRaw.decode(data[pos+2:])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        msg.length = len
         return msg
 
     def _encode_body(self) -> bytes:

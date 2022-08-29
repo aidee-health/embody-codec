@@ -115,6 +115,10 @@ class TestAttributes(TestCase):
         do_test_encode_decode_attribute(self, attributes.PulseRawAttribute(
             value=types.PulseRaw(ecg=1, ppg=1000)), b'\x00\x00\x00\x01\x00\x00\x03\xe8')
 
+    def test_encode_decode_pulse_raw_all(self):
+        do_test_encode_decode_attribute(self, attributes.PulseRawAllAttribute(
+            value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)), b'\x00\x00\x00\x01\x00\x00\x03\xe8\x00\x00\x00\x64\x00\x00\x00\x05')
+
     def test_encode_decode_acc_raw(self):
         do_test_encode_decode_attribute(self, attributes.AccRawAttribute(
             value=types.AccRaw(acc_x=271, acc_y=-15381, acc_z=4991)), b'\x01\x0f\xc3\xeb\x13\x7f')
