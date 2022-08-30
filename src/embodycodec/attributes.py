@@ -265,6 +265,11 @@ class DiagnosticsAttribute(ComplexTypeAttribute):
     attribute_id = 0xB5
     value: Diagnostics
 
+@dataclass
+class PulseRawListAttribute(ComplexTypeAttribute):
+    struct_format = PulseRawList.struct_format
+    attribute_id = 0xB6
+    value: PulseRawList
 
 @dataclass
 class ExecuteCommandResponseAfeReadAllRegsAttribute(Attribute):
@@ -346,4 +351,6 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return TemperatureAttribute.decode(data)
     if attribute_id == DiagnosticsAttribute.attribute_id:
         return DiagnosticsAttribute.decode(data)
+    if attribute_id == PulseRawListAttribute.attribute_id:
+        return PulseRawListAttribute.decode(data)
     return None
