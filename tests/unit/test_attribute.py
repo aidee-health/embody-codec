@@ -74,7 +74,7 @@ class TestAttributes(TestCase):
     def test_encode_decode_pulse_raw_list(self):
         do_test_encode_decode_attribute(self, attributes.PulseRawListAttribute(
             value=types.PulseRawList(ecg=1, no_of_ppgs=3, ppgs=[1000, 100, 5])),
-                                b'\x01\x00\x00\x00\x03\x00\x00\x00\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
+                                b'\x01\x00\x00\x00\x03\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
 
     def test_encode_decode_pulse_blood_pressure(self):
         do_test_encode_decode_attribute(self, attributes.BloodPressureAttribute(
