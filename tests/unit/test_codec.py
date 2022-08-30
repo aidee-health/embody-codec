@@ -58,6 +58,12 @@ class TestCodec(TestCase):
         self.assertEqual(decoded.length, 5)
         self.assertEqual(decoded, response)
 
+    def test_set_attribute_response_in_stream_of_messages(self):
+        encoded = b'\x91\x00\x05\xd30\x94\x00\x058\xc0'
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.SetAttributeResponse)
+        self.assertEqual(decoded.length, 5)
+
     def test_decode_get_attribute(self):
         message = b'\x12\x00\x06\xA1\x7D\x62'
         get_attribute = codec.decode(message)
