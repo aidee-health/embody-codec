@@ -85,7 +85,7 @@ class PulseRawList(ComplexType):
         ppgs = []
         pos = 5
 
-        for element in range(no_of_ppgs):
+        for _ in range(no_of_ppgs):
             ppg, = struct.unpack("<i", data[pos:pos+4])
             ppgs.append(ppg)
             pos += 4
