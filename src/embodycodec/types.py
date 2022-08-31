@@ -71,6 +71,37 @@ class PulseRawAll(ComplexType):
 
 
 @dataclass
+class PulseRawList(ComplexType):
+    ecg: int
+    no_of_ppgs: int
+    ppgs: list[int]
+
+    @classmethod
+    def decode(cls, data: bytes):
+        if len(data) < 10:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
+        ecg, = struct.unpack("<i", data[0:4])
+        no_of_ppgs, = struct.unpack("<B", data[4:5])
+        ppgs = []
+        pos = 5
+
+        for _ in range(no_of_ppgs):
+            ppg, = struct.unpack("<i", data[pos:pos+4])
+            ppgs.append(ppg)
+            pos += 4
+        msg = PulseRawList(ecg=ecg, no_of_ppgs=no_of_ppgs, ppgs=ppgs)
+        msg.length = 5 + (no_of_ppgs * 4)
+        return msg
+
+    def encode(self) -> bytes:
+        payload = struct.pack("<i", self.ecg)
+        payload += struct.pack("<B", self.no_of_ppgs)
+        for element in range(self.no_of_ppgs):
+            payload += struct.pack("<i", self.ppgs[element])
+        return payload
+
+
+@dataclass
 class Imu(ComplexType):
     struct_format = ">B"
     orientation_and_activity: int
