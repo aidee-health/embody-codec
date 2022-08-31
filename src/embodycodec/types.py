@@ -72,8 +72,10 @@ class PulseRawAll(ComplexType):
 
 @dataclass
 class PulseRawList(ComplexType):
-    ecg: int
+    format: int
+    no_of_ecgs: int
     no_of_ppgs: int
+    ecgs: list[int]
     ppgs: list[int]
 
     @classmethod
