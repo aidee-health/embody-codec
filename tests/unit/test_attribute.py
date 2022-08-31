@@ -73,8 +73,8 @@ class TestAttributes(TestCase):
     ''' Special type, since it's little endian'''
     def test_encode_decode_pulse_raw_list(self):
         do_test_encode_decode_attribute(self, attributes.PulseRawListAttribute(
-            value=types.PulseRawList(ecg=1, no_of_ppgs=3, ppgs=[1000, 100, 5])),
-                                b'\x01\x00\x00\x00\x03\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
+            value=types.PulseRawList(format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[1], ppgs=[1000, 100, 5])),
+                                b'\xD3\x01\x00\x00\x00\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
 
     def test_encode_decode_pulse_blood_pressure(self):
         do_test_encode_decode_attribute(self, attributes.BloodPressureAttribute(
