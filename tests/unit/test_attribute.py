@@ -76,6 +76,16 @@ class TestAttributes(TestCase):
             value=types.PulseRawList(format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[1], ppgs=[1000, 100, 5])),
                                 b'\xD3\x01\x00\x00\x00\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
 
+    def test_convert_PulseRawList_format_from_complex_byte(self):
+        fmt, ecg_length, ppg_length = types.PulseRawList.to_format_and_lengths(0xD3)
+        self.assertEqual(fmt, 3)
+        self.assertEqual(ecg_length, 1)
+        self.assertEqual(ppg_length, 3)
+
+    def test_convert_PulseRawList_format_to_complex_byte(self):
+        fmt_and_lengths = types.PulseRawList.from_format_and_lengths(3, 1, 3)
+        self.assertEqual(fmt_and_lengths, 0xD3)
+
     def test_encode_decode_pulse_blood_pressure(self):
         do_test_encode_decode_attribute(self, attributes.BloodPressureAttribute(
             value=types.BloodPressure(sys=120, dia=80, bp_map=100, pat=78, pulse=55)),
