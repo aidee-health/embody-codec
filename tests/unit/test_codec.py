@@ -218,16 +218,16 @@ class TestCodec(TestCase):
         self.assertEqual(decoded, response)
 
     def test_raw_pulse_list_changed(self):
-        response = codec.RawPulseListChanged(
-            changed_at=1,
-            value=types.PulseRawList(format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[12345678], ppgs=[87654321, 11223344, 88776655]))
+        response = codec.RawPulseListChanged(attribute_id=attributes.PulseRawListAttribute.attribute_id,
+                                             value=attributes.PulseRawListAttribute(
+                                                value=types.PulseRawList(tick=843, format=3, no_of_ecgs=1, no_of_ppgs=3, 
+                                                                         ecgs=[12345678], ppgs=[87654321, 11223344, 88776655])))
         encoded = response.encode()
-        print(encoded.hex())
         self.assertEqual(encoded,
-                         b'$\x00\x18\x00\x01\xd3Na\xbc\x00\xb1\x7f9\x050A\xab\x00\xcf\x9fJ\x0520')
+                         b'$\x00\x19\xb6K\x037Na\xbc\x00\xb1\x7f9\x050A\xab\x00\xcf\x9fJ\x05NS')
         decoded = codec.decode(encoded)
         self.assertIsInstance(decoded, codec.RawPulseListChanged)
-        self.assertEqual(decoded.length, 24)
+        self.assertEqual(decoded.length, 25)
         self.assertEqual(decoded, response)
 
     def test_raw_pulse_list_changed_response(self):

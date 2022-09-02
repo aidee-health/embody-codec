@@ -293,21 +293,20 @@ class RawPulseChangedResponse(Message):
 @dataclass
 class RawPulseListChanged(Message):
     msg_type = 0x24
-    changed_at: int
-    value: PulseRawList
+    attribute_id: int
+    value: PulseRawListAttribute
 
     @classmethod
     def decode(cls, data: bytes):
         pos = 2 # offset to start of body (skips length field (2B))
-        changed_at, = struct.unpack(">H", data[pos+0:pos+2])
-        # Determine if payload contains 1 or 3 PPGs
-        value = PulseRawList.decode(data[pos+2:])
-        msg = RawPulseListChanged(changed_at=changed_at, value=value)
+        attribute_id, = struct.unpack(">B", data[pos:pos+1])
+        value = PulseRawListAttribute.decode(data[pos+1:])
+        msg = RawPulseListChanged(attribute_id=attribute_id, value=value)
         msg.length, = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
-        first_part_of_body = struct.pack(">H", self.changed_at)
+        first_part_of_body = struct.pack(">B", self.attribute_id)
         raw_pulse_part = self.value.encode()
         return first_part_of_body + raw_pulse_part
 
