@@ -291,6 +291,33 @@ class RawPulseChangedResponse(Message):
 
 
 @dataclass
+class RawPulseListChanged(Message):
+    msg_type = 0x24
+    changed_at: int
+    value: PulseRawList
+
+    @classmethod
+    def decode(cls, data: bytes):
+        pos = 2 # offset to start of body (skips length field (2B))
+        changed_at, = struct.unpack(">H", data[pos+0:pos+2])
+        # Determine if payload contains 1 or 3 PPGs
+        value = PulseRawList.decode(data[pos+2:])
+        msg = RawPulseListChanged(changed_at=changed_at, value=value)
+        msg.length, = struct.unpack(">H", data[0:pos])
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">H", self.changed_at)
+        raw_pulse_part = self.value.encode()
+        return first_part_of_body + raw_pulse_part
+
+
+@dataclass
+class RawPulseListChangedResponse(Message):
+    msg_type = 0xA4
+
+
+@dataclass
 class Alarm(Message):
     struct_format = ">QB"
     alarm_types = {0x01: 'Low battery', 0x02: 'Device off body', 0x03: 'Device error'}
@@ -580,6 +607,10 @@ def decode(data: bytes) -> Message:
         return RawPulseChanged.decode(data[1:])
     if message_type == RawPulseChangedResponse.msg_type:
         return RawPulseChangedResponse.decode(data[1:])
+    if message_type == RawPulseListChanged.msg_type:
+        return RawPulseListChanged.decode(data[1:])
+    if message_type == RawPulseListChangedResponse.msg_type:
+        return RawPulseListChangedResponse.decode(data[1:])
     if message_type == Alarm.msg_type:
         return Alarm.decode(data[1:])
     if message_type == AlarmResponse.msg_type:

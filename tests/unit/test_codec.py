@@ -217,6 +217,28 @@ class TestCodec(TestCase):
         self.assertEqual(decoded.length, 5)
         self.assertEqual(decoded, response)
 
+    def test_raw_pulse_list_changed(self):
+        response = codec.RawPulseListChanged(
+            changed_at=1,
+            value=types.PulseRawList(format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[12345678], ppgs=[87654321, 11223344, 88776655]))
+        encoded = response.encode()
+        print(encoded.hex())
+        self.assertEqual(encoded,
+                         b'$\x00\x18\x00\x01\xd3Na\xbc\x00\xb1\x7f9\x050A\xab\x00\xcf\x9fJ\x0520')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.RawPulseListChanged)
+        self.assertEqual(decoded.length, 24)
+        self.assertEqual(decoded, response)
+
+    def test_raw_pulse_list_changed_response(self):
+        response = codec.RawPulseListChangedResponse()
+        encoded = response.encode()
+        self.assertEqual(encoded, b'\xa4\x00\x05\xfde')
+        decoded = codec.decode(encoded)
+        self.assertIsInstance(decoded, codec.RawPulseListChangedResponse)
+        self.assertEqual(decoded.length, 5)
+        self.assertEqual(decoded, response)
+
     def test_alarm(self):
         response = codec.Alarm(
             changed_at=int(datetime.fromisoformat('2022-04-20 00:05:23.283+00:00').timestamp() * 1000), alarm_type=1)
