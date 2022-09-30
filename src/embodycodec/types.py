@@ -71,6 +71,63 @@ class PulseRawAll(ComplexType):
 
 
 @dataclass
+class PulseRawList(ComplexType):
+    format: int
+    no_of_ecgs: int
+    no_of_ppgs: int
+    ecgs: list[int]
+    ppgs: list[int]
+
+    @classmethod
+    def decode(cls, data: bytes):
+        if len(data) < 10:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
+        format_and_sizes, = struct.unpack("<B", data[0:1])
+        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
+        ecgs = []
+        ppgs = []
+        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        pos = 1
+        for _ in range(no_of_ecgs):
+            ecg = int.from_bytes(data[pos:pos+bytes_per_ecg_and_ppg], byteorder="little", signed=True)
+            ecgs.append(ecg)
+            pos += bytes_per_ecg_and_ppg
+        for _ in range(no_of_ppgs):
+            ppg = int.from_bytes(data[pos:pos+bytes_per_ecg_and_ppg], byteorder="little", signed=True)
+            ppgs.append(ppg)
+            pos += bytes_per_ecg_and_ppg
+        msg = PulseRawList(format=fmt, no_of_ecgs=no_of_ecgs, no_of_ppgs=no_of_ppgs, ecgs=ecgs, ppgs=ppgs)
+        msg.length = 1 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
+        return msg
+
+    def encode(self) -> bytes:
+        format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
+        bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
+        payload = struct.pack("<B", format_and_length)
+        for element in range(self.no_of_ecgs):
+            payload += int.to_bytes(self.ecgs[element], length=bytes_per_ecg_and_ppg, byteorder="little", signed=True)
+        for element in range(self.no_of_ppgs):
+            payload += int.to_bytes(self.ppgs[element], length=bytes_per_ecg_and_ppg, byteorder="little", signed=True)
+        return payload
+
+    @staticmethod
+    def to_format_and_lengths(format_and_sizes: int) -> tuple:
+        fmt = (format_and_sizes & 0xFF) >> 6
+        no_of_ecgs = (format_and_sizes & 0x3F) >> 4
+        no_of_ppgs = format_and_sizes & 0xF
+        return fmt, no_of_ecgs, no_of_ppgs
+
+    @staticmethod
+    def from_format_and_lengths(fmt: int, no_of_ecgs: int, no_of_ppgs: int) -> int:
+        format_and_sizes = fmt & 0x3
+        format_and_sizes <<= 2
+        format_and_sizes += no_of_ecgs & 0x3
+        format_and_sizes <<= 4
+        format_and_sizes += no_of_ppgs & 0xF
+        return format_and_sizes & 0xFF
+
+
+@dataclass
 class Imu(ComplexType):
     struct_format = ">B"
     orientation_and_activity: int
