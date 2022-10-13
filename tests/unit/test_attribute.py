@@ -10,10 +10,16 @@ class TestAttributes(TestCase):
         do_test_encode_decode_attribute(self, attributes.SerialNoAttribute(12345678),
                                         b'\x00\x00\x00\x00\x00\xbc\x61\x4e')
 
+    def test_serial_no_attribute_format_value(self):
+        self.assertEqual(attributes.SerialNoAttribute(12345678).formatted_value(),'0000000000bc614e')
+
     def test_encode_decode_firmware_version(self):
         do_test_encode_decode_attribute(self, attributes.FirmwareVersionAttribute(12345678),
                                         b'\x00\x00\x00\x00\x00\xbc\x61\x4e')
 
+    def test_firmware_version_format_value(self):
+        self.assertEqual(attributes.FirmwareVersionAttribute(0x010203).formatted_value(), '01.02.03')
+        
     def test_encode_decode_bluetooth_mac(self):
         do_test_encode_decode_attribute(self, attributes.BluetoothMacAttribute(12345678),
                                         b'\x00\x00\x00\x00\x00\xbc\x61\x4e')
@@ -44,6 +50,11 @@ class TestAttributes(TestCase):
         do_test_encode_decode_attribute(self, attributes.CurrentTimeAttribute(
             int(datetime.fromisoformat('2022-04-20 00:05:25.283+00:00').timestamp() * 1000)),
                                         b'\x00\x00\x01\x80\x44\x49\xbe\xa3')
+
+    def test_current_time_format_value(self):
+        self.assertEqual(attributes.CurrentTimeAttribute(
+            int(datetime.fromisoformat('2022-04-20 00:05:25.283+00:00').timestamp() * 1000)).formatted_value(),
+                         '2022-04-20T00:05:25+00:00')
 
     def test_encode_decode_measurement_deactivated(self):
         do_test_encode_decode_attribute(self, attributes.MeasurementDeactivatedAttribute(1),
@@ -144,9 +155,12 @@ class TestAttributes(TestCase):
         decoded = do_test_encode_decode_attribute(self, attributes.TemperatureAttribute(value=3200),
                                                   b'\x0C\x80')
         self.assertEqual(decoded.temp_celsius(), 25.0)
+        self.assertEqual(decoded.formatted_value(), "25.0")
         decoded = do_test_encode_decode_attribute(self, attributes.TemperatureAttribute(value=-5120),
                                                   b'\xEC\x00')
         self.assertEqual(decoded.temp_celsius(), -40.0)
+        self.assertEqual(decoded.formatted_value(), "-40.0")
+
 
     def test_encode_decode_diagnostics(self):
         do_test_encode_decode_attribute(self, attributes.DiagnosticsAttribute(
@@ -163,4 +177,5 @@ def do_test_encode_decode_attribute(test_case: TestCase, attribute: attributes.A
     test_case.assertIsInstance(decoded, type(attribute))
     test_case.assertEqual(decoded.value, attribute.value)
     test_case.assertEqual(decoded.attribute_id, attribute.attribute_id)
+    test_case.assertIsNotNone(attribute.formatted_value())
     return decoded

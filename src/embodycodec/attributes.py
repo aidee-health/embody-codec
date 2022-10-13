@@ -5,6 +5,8 @@ attributes.
 """
 
 from abc import ABC
+from typing import Optional
+from datetime import datetime, timezone
 import struct
 from dataclasses import dataclass, astuple
 from .types import *
@@ -35,6 +37,12 @@ class Attribute(ABC):
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, *astuple(self))
 
+    def formatted_value(self) -> Optional[str]:
+        if hasattr(self, 'value'):
+            return str(self.value)
+        return None
+    
+
 
 @dataclass
 class ZeroTerminatedStringAttribute(Attribute, ABC):
@@ -49,6 +57,9 @@ class ZeroTerminatedStringAttribute(Attribute, ABC):
     def encode(self) -> bytes:
         return bytes(self.value, 'ascii') + b'\x00'
 
+    def formatted_value(self) -> Optional[str]:
+        return self.value
+
 
 @dataclass
 class ComplexTypeAttribute(Attribute, ABC):
@@ -62,6 +73,9 @@ class ComplexTypeAttribute(Attribute, ABC):
 
     def encode(self) -> bytes:
         return self.value.encode()
+    
+    def formatted_value(self) -> Optional[str]:
+        return str(self.value) if self.value else None
 
 
 @dataclass
@@ -70,6 +84,9 @@ class SerialNoAttribute(Attribute):
     attribute_id = 0x01
     value: int
 
+    def formatted_value(self) -> Optional[str]:
+        return self.value.to_bytes(8, "big", signed=True).hex() if self.value else None
+
 
 @dataclass
 class FirmwareVersionAttribute(Attribute):
@@ -77,12 +94,18 @@ class FirmwareVersionAttribute(Attribute):
     attribute_id = 0x02
     value: int
 
+    def formatted_value(self) -> Optional[str]:
+        newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True).hex()
+        return '.'.join(newval[i:i+2] for i in range(0, len(newval), 2))
 
 @dataclass
 class BluetoothMacAttribute(Attribute):
     struct_format = ">q"
     attribute_id = 0x03
     value: int
+
+    def formatted_value(self) -> Optional[str]:
+        return self.value.to_bytes(8, "big", signed=True).hex() if self.value else None
 
 
 @dataclass
@@ -114,6 +137,9 @@ class CurrentTimeAttribute(Attribute):
     struct_format = ">Q"
     attribute_id = 0x71
     value: int
+
+    def formatted_value(self) -> Optional[str]:
+        return datetime.fromtimestamp(self.value / 1000, tz=timezone.utc).replace(microsecond=0).isoformat()
 
 
 @dataclass
@@ -257,6 +283,9 @@ class TemperatureAttribute(Attribute):
 
     def temp_celsius(self) -> float:
         return self.value * 0.0078125
+
+    def formatted_value(self) -> Optional[str]:
+        return str(self.temp_celsius())
 
 
 @dataclass
