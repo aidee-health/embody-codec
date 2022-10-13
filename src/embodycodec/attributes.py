@@ -4,7 +4,7 @@ All attribute types inherits from the Attribute class, and provides self-contain
 attributes.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional
 from datetime import datetime, timezone
 import struct
