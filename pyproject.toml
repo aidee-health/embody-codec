@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-protocol-codec"
-version = "1.0.1"
+version = "1.0.2"
 description = "Embody Protocol Codec"
 authors = ["Aidee Health AS <hello@aidee.io>"]
 readme = "README.md"
@@ -18,7 +18,6 @@ Changelog = "https://github.com/aidee-health/embody-protocol-codec/releases"
 
 [tool.poetry.dependencies]
 python = " >=3.9,<3.10"
-unittest = "^0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.2.5"
