@@ -84,18 +84,18 @@ class TestAttributes(TestCase):
     ''' Special type, since it's little endian'''
     def test_encode_decode_pulse_raw_list(self):
         do_test_encode_decode_attribute(self, attributes.PulseRawListAttribute(
-            value=types.PulseRawList(format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[1], ppgs=[1000, 100, 5])),
-                                b'\xD3\x01\x00\x00\x00\xe8\x03\x00\x00\x64\x00\x00\x00\x05\x00\x00\x00')
+            value=types.PulseRawList(tick=843, format=3, no_of_ecgs=1, no_of_ppgs=3, ecgs=[1], ppgs=[1000, 100, 5])),
+                                     b'K\x037\x01\x00\x00\x00\xe8\x03\x00\x00d\x00\x00\x00\x05\x00\x00\x00')
 
     def test_convert_PulseRawList_format_from_complex_byte(self):
-        fmt, ecg_length, ppg_length = types.PulseRawList.to_format_and_lengths(0xD3)
+        fmt, ecg_length, ppg_length = types.PulseRawList.to_format_and_lengths(0x37)
         self.assertEqual(fmt, 3)
         self.assertEqual(ecg_length, 1)
         self.assertEqual(ppg_length, 3)
 
     def test_convert_PulseRawList_format_to_complex_byte(self):
         fmt_and_lengths = types.PulseRawList.from_format_and_lengths(3, 1, 3)
-        self.assertEqual(fmt_and_lengths, 0xD3)
+        self.assertEqual(fmt_and_lengths, 0x37)
 
     def test_encode_decode_pulse_blood_pressure(self):
         do_test_encode_decode_attribute(self, attributes.BloodPressureAttribute(
@@ -142,6 +142,10 @@ class TestAttributes(TestCase):
         do_test_encode_decode_attribute(self, attributes.PulseRawAttribute(
             value=types.PulseRaw(ecg=1, ppg=1000)), b'\x00\x00\x00\x01\x00\x00\x03\xe8')
 
+    def test_encode_decode_pulse_raw_all(self):
+        do_test_encode_decode_attribute(self, attributes.PulseRawAllAttribute(
+            value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)), b'\x00\x00\x00\x01\x00\x00\x03\xe8\x00\x00\x00\x64\x00\x00\x00\x05')
+
     def test_encode_decode_acc_raw(self):
         do_test_encode_decode_attribute(self, attributes.AccRawAttribute(
             value=types.AccRaw(acc_x=271, acc_y=-15381, acc_z=4991)), b'\x01\x0f\xc3\xeb\x13\x7f')
@@ -171,7 +175,6 @@ class TestAttributes(TestCase):
 
 def do_test_encode_decode_attribute(test_case: TestCase, attribute: attributes.Attribute, expected_encoded: bytes):
     encoded = attribute.encode()
-    print(encoded.hex())
     test_case.assertEqual(encoded, expected_encoded)
     decoded = attributes.decode_attribute(attribute.attribute_id, encoded)
     test_case.assertIsInstance(decoded, type(attribute))

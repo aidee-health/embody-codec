@@ -41,8 +41,8 @@ class Message(ABC):
         """Decode bytes into message object"""
         pos = 2 # offset to start of body (skips length field)
         msg = cls(*(struct.unpack(cls.struct_format, data[pos:pos+cls.__body_length()])))
-        msg.crc, = struct.unpack(">H", data[pos+cls.__body_length():])
         msg.length, = struct.unpack(">H", data[0:pos])
+        msg.crc, = struct.unpack(">H", data[pos+cls.__body_length():msg.length-1])
         return msg
 
     def encode(self) -> bytes:
@@ -266,11 +266,17 @@ class RawPulseChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
+        pos = 2 # offset to start of body (skips length field (2B))
+        header_crc = 7 # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
         changed_at, = struct.unpack(">H", data[pos+0:pos+2])
-        value = PulseRaw.decode(data[pos+2:])
+        length, = struct.unpack(">H", data[0:pos])
+        # Determine if payload contains 1 or 3 PPGs
+        if length - header_crc == PulseRawAll.length():
+            value = PulseRawAll.decode(data[pos+2:])
+        else:
+            value = PulseRaw.decode(data[pos+2:])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -282,6 +288,32 @@ class RawPulseChanged(Message):
 @dataclass
 class RawPulseChangedResponse(Message):
     msg_type = 0xA2
+
+
+@dataclass
+class RawPulseListChanged(Message):
+    msg_type = 0x24
+    attribute_id: int
+    value: PulseRawListAttribute
+
+    @classmethod
+    def decode(cls, data: bytes):
+        pos = 2 # offset to start of body (skips length field (2B))
+        attribute_id, = struct.unpack(">B", data[pos:pos+1])
+        value = PulseRawListAttribute.decode(data[pos+1:])
+        msg = RawPulseListChanged(attribute_id=attribute_id, value=value)
+        msg.length, = struct.unpack(">H", data[0:pos])
+        return msg
+
+    def _encode_body(self) -> bytes:
+        first_part_of_body = struct.pack(">B", self.attribute_id)
+        raw_pulse_part = self.value.encode()
+        return first_part_of_body + raw_pulse_part
+
+
+@dataclass
+class RawPulseListChangedResponse(Message):
+    msg_type = 0xA4
 
 
 @dataclass
@@ -574,6 +606,10 @@ def decode(data: bytes) -> Message:
         return RawPulseChanged.decode(data[1:])
     if message_type == RawPulseChangedResponse.msg_type:
         return RawPulseChangedResponse.decode(data[1:])
+    if message_type == RawPulseListChanged.msg_type:
+        return RawPulseListChanged.decode(data[1:])
+    if message_type == RawPulseListChangedResponse.msg_type:
+        return RawPulseListChangedResponse.decode(data[1:])
     if message_type == Alarm.msg_type:
         return Alarm.decode(data[1:])
     if message_type == AlarmResponse.msg_type:
