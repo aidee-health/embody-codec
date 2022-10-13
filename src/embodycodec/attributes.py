@@ -284,6 +284,9 @@ class TemperatureAttribute(Attribute):
     def temp_celsius(self) -> float:
         return self.value * 0.0078125
 
+    def formatted_value(self) -> Optional[str]:
+        return str(self.temp_celsius())
+
 
 @dataclass
 class DiagnosticsAttribute(ComplexTypeAttribute):

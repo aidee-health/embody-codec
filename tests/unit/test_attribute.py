@@ -155,9 +155,12 @@ class TestAttributes(TestCase):
         decoded = do_test_encode_decode_attribute(self, attributes.TemperatureAttribute(value=3200),
                                                   b'\x0C\x80')
         self.assertEqual(decoded.temp_celsius(), 25.0)
+        self.assertEqual(decoded.formatted_value(), "25.0")
         decoded = do_test_encode_decode_attribute(self, attributes.TemperatureAttribute(value=-5120),
                                                   b'\xEC\x00')
         self.assertEqual(decoded.temp_celsius(), -40.0)
+        self.assertEqual(decoded.formatted_value(), "-40.0")
+
 
     def test_encode_decode_diagnostics(self):
         do_test_encode_decode_attribute(self, attributes.DiagnosticsAttribute(
