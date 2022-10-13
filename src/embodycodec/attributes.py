@@ -97,7 +97,7 @@ class FirmwareVersionAttribute(Attribute):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError(f"Attribute buffer too short for message. \
+            raise BufferError(f"FirmwareVersionAttribute buffer too short for message. \
                                 Received {len(data)} bytes, expected {cls.length()} bytes")
         return FirmwareVersionAttribute(int.from_bytes(data[0:3], byteorder="big", signed=False))
 
