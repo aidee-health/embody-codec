@@ -14,8 +14,8 @@ class TestAttributes(TestCase):
         self.assertEqual(attributes.SerialNoAttribute(12345678).formatted_value(),'0000000000bc614e')
 
     def test_encode_decode_firmware_version(self):
-        do_test_encode_decode_attribute(self, attributes.FirmwareVersionAttribute(12345678),
-                                        b'\x00\x00\x00\x00\x00\xbc\x61\x4e')
+        do_test_encode_decode_attribute(self, attributes.FirmwareVersionAttribute(0x050202),
+                                        b'\x05\x02\x02')
 
     def test_firmware_version_format_value(self):
         self.assertEqual(attributes.FirmwareVersionAttribute(0x010203).formatted_value(), '01.02.03')

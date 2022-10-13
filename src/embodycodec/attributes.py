@@ -30,7 +30,7 @@ class Attribute(ABC):
     def decode(cls, data: bytes):
         if len(data) < cls.length():
             raise BufferError(f"Attribute buffer too short for message. \
-                                Received {len(data)} bytes, expected {cls.length} bytes")
+                                Received {len(data)} bytes, expected {cls.length()} bytes")
         attr = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
         return attr
 
@@ -91,9 +91,22 @@ class SerialNoAttribute(Attribute):
 
 @dataclass
 class FirmwareVersionAttribute(Attribute):
-    struct_format = ">q"
     attribute_id = 0x02
     value: int
+
+    @classmethod
+    def decode(cls, data: bytes):
+        if len(data) < cls.length():
+            raise BufferError(f"Attribute buffer too short for message. \
+                                Received {len(data)} bytes, expected {cls.length()} bytes")
+        return FirmwareVersionAttribute(int.from_bytes(data[0:3], byteorder="big", signed=False))
+
+    def encode(self) -> bytes:
+        return int.to_bytes(self.value, length=3, byteorder="big", signed=True)
+
+    @classmethod
+    def length(cls) -> int:
+        return 3
 
     def formatted_value(self) -> Optional[str]:
         newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True).hex()
