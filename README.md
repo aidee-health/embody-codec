@@ -28,14 +28,6 @@ git+https://github.com/aidee-health/embody-protocol-codec@da39a3ee5e6b4b0d325ef9
 git+https://github.com/aidee-health/embody-protocol-codec@refs/pull/123/head#egg=embodycodec
 ```
 
-# Generating distribution archives
-
-To generate a new distribution archive, run:
-```
-python3 -m pip install --upgrade build
-python3 -m build
-```
-
 # Resources
 
 * [Python Package tutorial](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
