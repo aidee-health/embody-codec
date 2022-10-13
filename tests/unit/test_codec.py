@@ -460,6 +460,11 @@ class TestCodec(TestCase):
         self.assertEqual(decoded.length, 6)
         self.assertEqual(decoded, response)
 
+    def test_get_attribute_model(self):
+        msg = codec.decode(bytes.fromhex("92001c04000000def8b0c8490000000a4973656e736555204733475f"))
+        self.assertIsInstance(msg, codec.GetAttributeResponse)
+        self.assertIsInstance(msg.value, attributes.ModelAttribute)
+        self.assertEqual(msg.value.value, "IsenseU G3")
 
 # helper method for get_attribute_response tests
 def do_test_get_attribute_response_and_return_decoded(case: TestCase, attribute: attributes.Attribute,

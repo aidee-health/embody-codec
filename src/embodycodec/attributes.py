@@ -46,16 +46,17 @@ class Attribute(ABC):
 
 @dataclass
 class ZeroTerminatedStringAttribute(Attribute, ABC):
+    """Zero terminated string is actually not zero terminated - only length terminated..."""
     value: str
 
     @classmethod
     def decode(cls, data: bytes):
         attr = cls(None)
-        attr.value = (data[0:len(data)-1]).decode('ascii')
+        attr.value = (data[0:len(data)]).decode('ascii')
         return attr
 
     def encode(self) -> bytes:
-        return bytes(self.value, 'ascii') + b'\x00'
+        return bytes(self.value, 'ascii')
 
     def formatted_value(self) -> Optional[str]:
         return self.value

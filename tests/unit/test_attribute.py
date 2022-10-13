@@ -26,11 +26,11 @@ class TestAttributes(TestCase):
 
     def test_encode_decode_model(self):
         do_test_encode_decode_attribute(self, attributes.ModelAttribute('Aidee Embody'),
-                                        b'\x41\x69\x64\x65\x65\x20\x45\x6d\x62\x6f\x64\x79\x00')
+                                        b'\x41\x69\x64\x65\x65\x20\x45\x6d\x62\x6f\x64\x79')
 
     def test_encode_decode_vendor(self):
         do_test_encode_decode_attribute(self, attributes.VendorAttribute('Aidee'),
-                                        b'\x41\x69\x64\x65\x65\x00')
+                                        b'\x41\x69\x64\x65\x65')
 
     def test_encode_decode_afe_settings(self):
         do_test_encode_decode_attribute(self, attributes.AfeSettingsAttribute(
