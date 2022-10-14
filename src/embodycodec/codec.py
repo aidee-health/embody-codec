@@ -9,9 +9,9 @@ from abc import ABC
 import struct
 from dataclasses import dataclass, astuple
 from typing import List
-from .crc import crc16
-from .attributes import *
-from .types import *
+from embodycodec.crc import crc16
+from embodycodec.attributes import *
+from embodycodec.types import *
 
 
 @dataclass
@@ -644,3 +644,7 @@ def decode(data: bytes) -> Message:
     if message_type == ExecuteCommandResponse.msg_type:
         return ExecuteCommandResponse.decode(data[1:])
     return None
+
+
+if __name__ == "__main__":
+    print(GetAttribute(SerialNoAttribute.attribute_id).encode().hex())

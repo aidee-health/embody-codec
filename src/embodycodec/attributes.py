@@ -9,7 +9,7 @@ from typing import Optional
 from datetime import datetime, timezone
 import struct
 from dataclasses import dataclass, astuple
-from .types import *
+from embodycodec.types import *
 
 
 @dataclass

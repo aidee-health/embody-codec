@@ -1,8 +1,8 @@
 from unittest import TestCase
-from src.embodycodec import codec
+from embodycodec import codec
 from datetime import datetime
-from src.embodycodec import attributes
-from src.embodycodec import types
+from embodycodec import attributes
+from embodycodec import types
 
 
 class TestCodec(TestCase):

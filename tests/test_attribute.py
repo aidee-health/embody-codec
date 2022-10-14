@@ -1,6 +1,6 @@
 from unittest import TestCase
-from src.embodycodec import attributes
-from src.embodycodec import types
+from embodycodec import attributes
+from embodycodec import types
 from datetime import datetime
 
 

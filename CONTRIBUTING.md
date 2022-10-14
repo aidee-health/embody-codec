@@ -80,11 +80,16 @@ poetry add <library>
 poetry update
 ```
 
-Changes are made to the _pyproject.toml_ file. 
+Changes are made to the _pyproject.toml_ file and the _poetry.lock_ file 
 
 ## How to perform a release
 
 To do a release:
 
-- Create a new branch
-- Run `poetry version`
+- Create a new branch (or use an existing one if appropriate)
+- Run `poetry version <new version number>`
+- Push and create a pull request
+- Merge pull request after approval
+
+On merge, a release will be generated automatically, with all pull requests as
+changes in the release note. 

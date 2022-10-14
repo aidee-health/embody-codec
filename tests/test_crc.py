@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.embodycodec.crc import crc16
+from embodycodec.crc import crc16
 
 
 class TestCrc(TestCase):
