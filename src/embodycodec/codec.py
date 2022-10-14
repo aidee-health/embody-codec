@@ -5,13 +5,15 @@ All protocol message types inherits from the Message class, and provides self-co
 messages.
 """
 
-from abc import ABC
 import struct
-from dataclasses import dataclass, astuple
+from abc import ABC
+from dataclasses import astuple
+from dataclasses import dataclass
 from typing import List
-from .crc import crc16
-from .attributes import *
-from .types import *
+
+from embodycodec import attributes as a
+from embodycodec import types as t
+from embodycodec.crc import crc16
 
 
 @dataclass
@@ -19,8 +21,8 @@ class Message(ABC):
     """Abstract base class for protocol messages"""
 
     struct_format = ""
-    """unpack format to be overridden by sub-classes, see 
-    https://docs.python.org/3/library/struct.html#format-characters 
+    """unpack format to be overridden by sub-classes, see
+    https://docs.python.org/3/library/struct.html#format-characters
     does not include header (type and length field) or footer (crc)"""
 
     msg_type = None
@@ -39,10 +41,14 @@ class Message(ABC):
     @classmethod
     def decode(cls, data: bytes):
         """Decode bytes into message object"""
-        pos = 2 # offset to start of body (skips length field)
-        msg = cls(*(struct.unpack(cls.struct_format, data[pos:pos+cls.__body_length()])))
-        msg.length, = struct.unpack(">H", data[0:pos])
-        msg.crc, = struct.unpack(">H", data[pos+cls.__body_length():msg.length-1])
+        pos = 2  # offset to start of body (skips length field)
+        msg = cls(
+            *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
+        )
+        (msg.length,) = struct.unpack(">H", data[0:pos])
+        (msg.crc,) = struct.unpack(
+            ">H", data[pos + cls.__body_length() : msg.length - 1]
+        )
         return msg
 
     def encode(self) -> bytes:
@@ -71,10 +77,20 @@ class HeartbeatResponse(Message):
 @dataclass
 class NackResponse(Message):
     struct_format = ">B"
-    error_messages = {0x01: 'Unknown message type', 0x02: 'Unknown message content', 0x03: 'Unknown attribute',
-                      0x04: 'Message to short', 0x05: 'Message to long', 0x06: 'Message with illegal CRC',
-                      0x07: 'Message buffer full', 0x08: 'File system error', 0x09: 'Delete file error',
-                      0x0A: 'File not found', 0x0B: 'Retransmit failed', 0x0C: 'File not opened'}
+    error_messages = {
+        0x01: "Unknown message type",
+        0x02: "Unknown message content",
+        0x03: "Unknown attribute",
+        0x04: "Message to short",
+        0x05: "Message to long",
+        0x06: "Message with illegal CRC",
+        0x07: "Message buffer full",
+        0x08: "File system error",
+        0x09: "Delete file error",
+        0x0A: "File not found",
+        0x0B: "Retransmit failed",
+        0x0C: "File not opened",
+    }
     msg_type = 0x82
     response_code: int
 
@@ -89,16 +105,16 @@ class SetAttribute(Message):
     msg_type = 0x11
     length = None
     attribute_id: int
-    value: Attribute
+    value: a.Attribute
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        attribute_id, = struct.unpack(">B", data[pos:pos+1])
-        attrib_len, = struct.unpack(">B", data[pos+1:pos+2])
-        value = decode_attribute(attribute_id, data[pos+2:pos+2+attrib_len])
+        pos = 2  # offset to start of body (skips length field)
+        (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
+        (attrib_len,) = struct.unpack(">B", data[pos + 1 : pos + 2])
+        value = a.decode_attribute(attribute_id, data[pos + 2 : pos + 2 + attrib_len])
         msg = SetAttribute(attribute_id=attribute_id, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -126,21 +142,25 @@ class GetAttributeResponse(Message):
     length = None
     attribute_id: int
     changed_at: int
-    reporting: Reporting
-    value: Attribute
+    reporting: t.Reporting
+    value: a.Attribute
 
     @classmethod
     def decode(cls, data: bytes):
         pos = 2  # offset to start of body (skips length field)
-        attribute_id, = struct.unpack(">B", data[pos+0:pos+1])
-        changed_at, = struct.unpack(">Q", data[pos+1:pos+9])
-        reporting = Reporting.decode(data[pos+9:pos+9+Reporting.length()])
-        pos = pos + 9 + Reporting.length()
-        length, =  struct.unpack(">B", data[pos:pos+1])
-        value = decode_attribute(attribute_id, data[pos+1:pos+length+1])
-        msg = GetAttributeResponse(attribute_id=attribute_id, changed_at=changed_at, reporting=reporting,
-                                   value=value)
-        msg.length, = struct.unpack(">H", data[:2])
+        (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
+        (changed_at,) = struct.unpack(">Q", data[pos + 1 : pos + 9])
+        reporting = t.Reporting.decode(data[pos + 9 : pos + 9 + t.Reporting.length()])
+        pos = pos + 9 + t.Reporting.length()
+        (length,) = struct.unpack(">B", data[pos : pos + 1])
+        value = a.decode_attribute(attribute_id, data[pos + 1 : pos + length + 1])
+        msg = GetAttributeResponse(
+            attribute_id=attribute_id,
+            changed_at=changed_at,
+            reporting=reporting,
+            value=value,
+        )
+        (msg.length,) = struct.unpack(">H", data[:2])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -167,15 +187,15 @@ class ResetAttributeResponse(Message):
 class ConfigureReporting(Message):
     msg_type = 0x14
     attribute_id: int
-    reporting: Reporting
+    reporting: t.Reporting
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        attribute_id, = struct.unpack(">B", data[pos+0:pos+1])
-        reporting = Reporting.decode(data[pos+1:pos+1+Reporting.length()])
+        pos = 2  # offset to start of body (skips length field)
+        (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
+        reporting = t.Reporting.decode(data[pos + 1 : pos + 1 + t.Reporting.length()])
         msg = ConfigureReporting(attribute_id=attribute_id, reporting=reporting)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -190,9 +210,9 @@ class ConfigureReportingResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
+        pos = 2  # offset to start of body (skips length field)
         msg = ConfigureReportingResponse()
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
 
@@ -211,14 +231,14 @@ class ResetReportingResponse(Message):
 @dataclass
 class PeriodicRecording(Message):
     msg_type = 0x16
-    recording: Recording
+    recording: t.Recording
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        recording = Recording.decode(data[pos+0:pos+Recording.length()])
+        pos = 2  # offset to start of body (skips length field)
+        recording = t.Recording.decode(data[pos + 0 : pos + t.Recording.length()])
         msg = PeriodicRecording(recording=recording)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -235,16 +255,18 @@ class AttributeChanged(Message):
     msg_type = 0x21
     changed_at: int
     attribute_id: int
-    value: Attribute
+    value: a.Attribute
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        changed_at, = struct.unpack(">Q", data[pos+0:pos+8])
-        attribute_id, = struct.unpack(">B", data[pos+8:pos+9])
-        value = decode_attribute(attribute_id, data[pos+10:])
-        msg = AttributeChanged(changed_at=changed_at, attribute_id=attribute_id, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        pos = 2  # offset to start of body (skips length field)
+        (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
+        (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
+        value = a.decode_attribute(attribute_id, data[pos + 10 :])
+        msg = AttributeChanged(
+            changed_at=changed_at, attribute_id=attribute_id, value=value
+        )
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -263,19 +285,19 @@ class AttributeChangedResponse(Message):
 class RawPulseChanged(Message):
     msg_type = 0x22
     changed_at: int
-    value: PulseRaw
+    value: t.PulseRaw
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field (2B))
-        header_crc = 7 # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
-        changed_at, = struct.unpack(">H", data[pos+0:pos+2])
-        length, = struct.unpack(">H", data[0:pos])
+        pos = 2  # offset to start of body (skips length field (2B))
+        header_crc = 7  # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
+        (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
+        (length,) = struct.unpack(">H", data[0:pos])
         # Determine if payload contains 1 or 3 PPGs
-        if length - header_crc == PulseRawAll.length():
-            value = PulseRawAll.decode(data[pos+2:])
+        if length - header_crc == t.PulseRawAll.length():
+            value = t.PulseRawAll.decode(data[pos + 2 :])
         else:
-            value = PulseRaw.decode(data[pos+2:])
+            value = t.PulseRaw.decode(data[pos + 2 :])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
         msg.length = length
         return msg
@@ -295,15 +317,15 @@ class RawPulseChangedResponse(Message):
 class RawPulseListChanged(Message):
     msg_type = 0x24
     attribute_id: int
-    value: PulseRawListAttribute
+    value: a.PulseRawListAttribute
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field (2B))
-        attribute_id, = struct.unpack(">B", data[pos:pos+1])
-        value = PulseRawListAttribute.decode(data[pos+1:])
+        pos = 2  # offset to start of body (skips length field (2B))
+        (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
+        value = a.PulseRawListAttribute.decode(data[pos + 1 :])
         msg = RawPulseListChanged(attribute_id=attribute_id, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -320,7 +342,7 @@ class RawPulseListChangedResponse(Message):
 @dataclass
 class Alarm(Message):
     struct_format = ">QB"
-    alarm_types = {0x01: 'Low battery', 0x02: 'Device off body', 0x03: 'Device error'}
+    alarm_types = {0x01: "Low battery", 0x02: "Device off body", 0x03: "Device error"}
     msg_type = 0x31
     changed_at: int
     alarm_type: int
@@ -345,25 +367,27 @@ class ListFiles(Message):
 class ListFilesResponse(Message):
     struct_format = ">26cI"
     msg_type = 0xC1
-    files: List[FileWithLength]
+    files: list[t.FileWithLength]
 
     @classmethod
     def decode(cls, data: bytes):
         # ListFiles length
         msg = ListFilesResponse(files=[])
-        msg.length, = struct.unpack(">H", data[0:2])
+        (msg.length,) = struct.unpack(">H", data[0:2])
 
         if msg.length > 5:
             pos = 2
-            while pos + FileWithLength.length() <= msg.length - 1:
-                msg.files.append(FileWithLength.decode(data[pos:pos + FileWithLength.length()]))
-                pos += FileWithLength.length()
+            while pos + t.FileWithLength.length() <= msg.length - 1:
+                msg.files.append(
+                    t.FileWithLength.decode(data[pos : pos + t.FileWithLength.length()])
+                )
+                pos += t.FileWithLength.length()
         return msg
 
     def _encode_body(self) -> bytes:
-        body = b''
+        body = b""
         if self.files is None or len(self.files) == 0:
-            return b''
+            return b""
         for file in self.files:
             body += file.encode()
         return body
@@ -372,14 +396,14 @@ class ListFilesResponse(Message):
 @dataclass
 class GetFile(Message):
     msg_type = 0x42
-    file: File
+    file: t.File
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        value = File.decode(data[pos:])
+        pos = 2  # offset to start of body (skips length field)
+        value = t.File.decode(data[pos:])
         msg = GetFile(file=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -394,20 +418,26 @@ class GetFileResponse(Message):
 @dataclass
 class SendFile(Message):
     msg_type = 0x43
-    file_name: File
+    file_name: t.File
     index: int
     total_parts: int
     payload: bytes
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        file_name = File.decode(data[pos:])
-        index, = struct.unpack(">H", data[pos+File.length():pos+File.length()+2])
-        total_parts, = struct.unpack(">H", data[pos+File.length()+2:pos+File.length()+4])
-        payload = data[pos+File.length()+4:len(data)-2]
-        msg = SendFile(file_name=file_name, index=index, total_parts=total_parts, payload=payload)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        pos = 2  # offset to start of body (skips length field)
+        file_name = t.File.decode(data[pos:])
+        (index,) = struct.unpack(
+            ">H", data[pos + t.File.length() : pos + t.File.length() + 2]
+        )
+        (total_parts,) = struct.unpack(
+            ">H", data[pos + t.File.length() + 2 : pos + t.File.length() + 4]
+        )
+        payload = data[pos + t.File.length() + 4 : len(data) - 2]
+        msg = SendFile(
+            file_name=file_name, index=index, total_parts=total_parts, payload=payload
+        )
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -428,14 +458,14 @@ class SendFileResponse(Message):
 @dataclass
 class DeleteFile(Message):
     msg_type = 0x44
-    file: File
+    file: t.File
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        value = File.decode(data[pos:])
+        pos = 2  # offset to start of body (skips length field)
+        value = t.File.decode(data[pos:])
         msg = DeleteFile(file=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -450,14 +480,14 @@ class DeleteFileResponse(Message):
 @dataclass
 class GetFileUart(Message):
     msg_type = 0x45
-    file: File
+    file: t.File
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        value = File.decode(data[pos:])
+        pos = 2  # offset to start of body (skips length field)
+        value = t.File.decode(data[pos:])
         msg = GetFileUart(file=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
@@ -493,9 +523,14 @@ class ReformatDiskResponse(Message):
 class ExecuteCommand(Message):
     RESET_DEVICE = 0x01
     REBOOT_DEVICE = 0x02
-    command_types = {0x01: 'Reset device', 0x02: 'Reboot device', 0xA1: 'AFE: Read all registers',
-                     0xA2: 'AFE: Write register <Addr (1 byte)><Value (4 bytes)>',
-                     0xA3: 'AFE: Calibration command <Cmd (1 byte))', 0xA4: 'AFE: Gain setting <Cmd (1 byte)'}
+    command_types = {
+        0x01: "Reset device",
+        0x02: "Reboot device",
+        0xA1: "AFE: Read all registers",
+        0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
+        0xA3: "AFE: Calibration command <Cmd (1 byte))",
+        0xA4: "AFE: Gain setting <Cmd (1 byte)",
+    }
     msg_type = 0x51
     command_id: int
     value: None
@@ -507,25 +542,25 @@ class ExecuteCommand(Message):
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        command_id, = struct.unpack(">B", data[pos+0:pos+1])
-        value = decode_executive_command_response(command_id, data[pos+1:])
+        pos = 2  # offset to start of body (skips length field)
+        (command_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
+        value = a.decode_executive_command_response(command_id, data[pos + 1 :])
         msg = ExecuteCommand(command_id=command_id, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
-        if self.command_id == ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
+        if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        if self.command_id == ExecuteCommandType.AFE_GAIN_SETTING.value:
+        if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        if self.command_id == ExecuteCommandType.AFE_WRITE_REGISTER.value:
+        if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
             attribute_part = struct.pack(">B", self.command_id)
             address_part = struct.pack(">B", self.value[0])
             value_part = struct.pack(">I", self.value[1])
@@ -543,20 +578,20 @@ class ExecuteCommandResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes):
-        pos = 2 # offset to start of body (skips length field)
-        response_code, = struct.unpack(">B", data[pos+0:pos+1])
-        value = decode_executive_command_response(response_code, data[pos+1:])
+        pos = 2  # offset to start of body (skips length field)
+        (response_code,) = struct.unpack(">B", data[pos + 0 : pos + 1])
+        value = a.decode_executive_command_response(response_code, data[pos + 1 :])
         msg = ExecuteCommandResponse(response_code=response_code, value=value)
-        msg.length, = struct.unpack(">H", data[0:pos])
+        (msg.length,) = struct.unpack(">H", data[0:pos])
         return msg
 
     def _encode_body(self) -> bytes:
-        if self.response_code == ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
+        if self.response_code == t.ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
             attribute_part = struct.pack(">B", self.response_code)
             address_part = struct.pack(">B", self.value[0])
             value_part = struct.pack(">I", self.value[1])
             return attribute_part + address_part + value_part
-        
+
         attribute_part = struct.pack(">B", self.response_code)
         return attribute_part
 
@@ -566,9 +601,11 @@ def decode(data: bytes) -> Message:
     Returns None if unknown message type"""
 
     message_type = data[0]
-    length, = struct.unpack(">H", data[1:3])
+    (length,) = struct.unpack(">H", data[1:3])
     if len(data) < length:
-        raise BufferError(f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes")
+        raise BufferError(
+            f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes"
+        )
     if message_type == Heartbeat.msg_type:
         return Heartbeat.decode(data[1:])
     if message_type == HeartbeatResponse.msg_type:

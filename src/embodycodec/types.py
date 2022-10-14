@@ -1,10 +1,11 @@
 """Complex types for the EmBody device
 """
 
-from abc import ABC
-import struct
 import enum
-from dataclasses import dataclass, astuple
+import struct
+from abc import ABC
+from dataclasses import astuple
+from dataclasses import dataclass
 
 
 class ExecuteCommandType(enum.Enum):
@@ -29,9 +30,11 @@ class ComplexType(ABC):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < cls.length():
-            raise BufferError(f"Buffer too short for message. Received "
-                              f"{len(data)} bytes, expected {cls.length()} bytes")
-        msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
+            raise BufferError(
+                f"Buffer too short for message. Received "
+                f"{len(data)} bytes, expected {cls.length()} bytes"
+            )
+        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.length()])))
         return msg
 
     def encode(self) -> bytes:
@@ -83,35 +86,76 @@ class PulseRawList(ComplexType):
     @classmethod
     def decode(cls, data: bytes):
         if len(data) < 10:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
-        tick, = struct.unpack("<H", data[0:2])
-        format_and_sizes, = struct.unpack("<B", data[2:3])
-        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
+            )
+        (tick,) = struct.unpack("<H", data[0:2])
+        (format_and_sizes,) = struct.unpack("<B", data[2:3])
+        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(
+            format_and_sizes
+        )
         ecgs = []
         ppgs = []
-        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        bytes_per_ecg_and_ppg = (
+            1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        )
         pos = 3
         for _ in range(no_of_ecgs):
-            ecg = int.from_bytes(data[pos:pos+bytes_per_ecg_and_ppg], byteorder="little", signed=True)
+            ecg = int.from_bytes(
+                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
+            )
             ecgs.append(ecg)
             pos += bytes_per_ecg_and_ppg
         for _ in range(no_of_ppgs):
-            ppg = int.from_bytes(data[pos:pos+bytes_per_ecg_and_ppg], byteorder="little", signed=True)
+            ppg = int.from_bytes(
+                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
+            )
             ppgs.append(ppg)
             pos += bytes_per_ecg_and_ppg
-        msg = PulseRawList(tick=tick, format=fmt, no_of_ecgs=no_of_ecgs, no_of_ppgs=no_of_ppgs, ecgs=ecgs, ppgs=ppgs)
-        msg.length = 1 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
+        msg = PulseRawList(
+            tick=tick,
+            format=fmt,
+            no_of_ecgs=no_of_ecgs,
+            no_of_ppgs=no_of_ppgs,
+            ecgs=ecgs,
+            ppgs=ppgs,
+        )
+        msg.length = (
+            1
+            + (no_of_ecgs * bytes_per_ecg_and_ppg)
+            + (no_of_ppgs * bytes_per_ecg_and_ppg)
+        )
         return msg
 
     def encode(self) -> bytes:
-        format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
-        bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
+        format_and_length = PulseRawList.from_format_and_lengths(
+            self.format, self.no_of_ecgs, self.no_of_ppgs
+        )
+        bytes_per_ecg_and_ppg = (
+            1
+            if self.format == 0
+            else 2
+            if self.format == 1
+            else 3
+            if self.format == 2
+            else 4
+        )
         payload = struct.pack("<H", self.tick)
         payload += struct.pack("<B", format_and_length)
         for element in range(self.no_of_ecgs):
-            payload += int.to_bytes(self.ecgs[element], length=bytes_per_ecg_and_ppg, byteorder="little", signed=True)
+            payload += int.to_bytes(
+                self.ecgs[element],
+                length=bytes_per_ecg_and_ppg,
+                byteorder="little",
+                signed=True,
+            )
         for element in range(self.no_of_ppgs):
-            payload += int.to_bytes(self.ppgs[element], length=bytes_per_ecg_and_ppg, byteorder="little", signed=True)
+            payload += int.to_bytes(
+                self.ppgs[element],
+                length=bytes_per_ecg_and_ppg,
+                byteorder="little",
+                signed=True,
+            )
         return payload
 
     @staticmethod
@@ -225,13 +269,13 @@ class File(ComplexType):
 
     @classmethod
     def decode(cls, data: bytes):
-        msg = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
+        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.length()])))
         if msg.file_name is not None and isinstance(msg.file_name, bytes):
-            msg.file_name = msg.file_name.split(b'\x00', maxsplit=1)[0].decode('utf-8')
+            msg.file_name = msg.file_name.split(b"\x00", maxsplit=1)[0].decode("utf-8")
         return msg
 
     def encode(self) -> bytes:
-        return struct.pack(self.struct_format, self.file_name.encode('utf-8'))
+        return struct.pack(self.struct_format, self.file_name.encode("utf-8"))
 
 
 @dataclass
@@ -240,4 +284,6 @@ class FileWithLength(File):
     file_size: int
 
     def encode(self) -> bytes:
-        return struct.pack(self.struct_format, self.file_name.encode('utf-8'), self.file_size)
+        return struct.pack(
+            self.struct_format, self.file_name.encode("utf-8"), self.file_size
+        )
