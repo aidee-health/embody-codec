@@ -460,17 +460,24 @@ class TestCodec(TestCase):
         self.assertEqual(decoded.length, 6)
         self.assertEqual(decoded, response)
 
-    def test_get_attribute_model(self):
+    def test_get_attribute_response_model(self):
         msg = codec.decode(bytes.fromhex("92001c04000000def8b0c8490000000a4973656e736555204733475f"))
         self.assertIsInstance(msg, codec.GetAttributeResponse)
         self.assertIsInstance(msg.value, attributes.ModelAttribute)
         self.assertEqual(msg.value.formatted_value(), "IsenseU G3")
 
-    def test_get_attribute_firmware(self):
+    def test_get_attribute_response_firmware(self):
         msg = codec.decode(bytes.fromhex("92001502000000def8e22fec0000000305020269fa"))
         self.assertIsInstance(msg, codec.GetAttributeResponse)
         self.assertIsInstance(msg.value, attributes.FirmwareVersionAttribute)
         self.assertEqual(msg.value.formatted_value(), "05.02.02")
+
+    def test_get_attribute_response_afe_settings_all(self):
+        msg = codec.decode(bytes.fromhex("9200120700000183d6fa48be000002008cc8"))
+        self.assertIsInstance(msg, codec.GetAttributeResponse)
+        self.assertIsInstance(msg.value, attributes.AfeSettingsAllAttribute)
+        self.assertIsNotNone(msg.value.value)
+
 
 # helper method for get_attribute_response tests
 def do_test_get_attribute_response_and_return_decoded(case: TestCase, attribute: attributes.Attribute,
