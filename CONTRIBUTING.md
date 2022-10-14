@@ -1,7 +1,7 @@
 # Contributor Guide
 
 Thank you for your interest in improving this project. This page is
-for developers wishing to contribute to this project. 
+for developers wishing to contribute to this project.
 
 Here is a list of important resources for contributors:
 
@@ -35,6 +35,8 @@ Request features on the [Issue Tracker].
 You need Python 3.9+ and the following tools:
 
 - [Poetry]
+- [Nox]
+- [nox-poetry]
 
 Install the package with development requirements:
 
@@ -42,9 +44,19 @@ Install the package with development requirements:
 $ poetry install
 ```
 
-Note that most python IDEs has support for poetry as the intepreter. 
+Note that most python IDEs has support for poetry as the intepreter.
 
 [poetry]: https://python-poetry.org/
+[nox]: https://nox.thea.codes/
+[nox-poetry]: https://nox-poetry.readthedocs.io/
+
+## How to setup pre-commit-hooks
+
+To run linting and code formatting checks before committing your change, you can install pre-commit as a Git hook by running the following command:
+
+```console
+$ nox --session=pre-commit -- install
+```
 
 ## How to test the project
 
@@ -80,7 +92,7 @@ poetry add <library>
 poetry update
 ```
 
-Changes are made to the _pyproject.toml_ file. 
+Changes are made to the _pyproject.toml_ file.
 
 ## How to perform a release
 
