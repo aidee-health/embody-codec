@@ -145,6 +145,16 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
     attribute_id = 0x07
     value: AfeSettingsAll
 
+    @classmethod
+    def decode(cls, data: bytes):
+        """Special handling. certain versions of the device returns an empty attribute value."""
+
+        if len(data) == 0:
+            return AfeSettingsAllAttribute(value=AfeSettingsAll(rf_gain=None, cf_value=None, ecg_gain=None,
+                    ioffdac_range=None, led1=None, led2=None, led3=None, led4=None, off_dac1=None,
+                    off_dac2=None, off_dac3=None, relative_gain=None))
+        return AfeSettingsAllAttribute(value=AfeSettingsAll.decode(data))
+
 
 @dataclass
 class CurrentTimeAttribute(Attribute):
