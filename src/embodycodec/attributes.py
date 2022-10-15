@@ -10,27 +10,36 @@ from dataclasses import astuple
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import timezone
+from typing import Any
 from typing import Optional
+from typing import Type
+from typing import TypeVar
 
 from embodycodec import types as t
+
+
+T = TypeVar("T", bound="Attribute")
 
 
 @dataclass
 class Attribute(ABC):
     """Abstract base class for attribute types"""
 
-    struct_format = None
+    struct_format = ""
     """struct format used to pack/unpack object - must be set by subclasses"""
 
-    attribute_id = None
+    attribute_id = int(-1)
     """attribute id field - must be set by subclasses"""
+
+    value: Any
+    """value is implemented and overridden by subclasses."""
 
     @classmethod
     def length(cls) -> int:
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls: type[T], data: bytes) -> T:
         if len(data) < cls.length():
             raise BufferError(
                 f"Attribute buffer too short for message. \
@@ -43,9 +52,7 @@ class Attribute(ABC):
         return struct.pack(self.struct_format, *astuple(self))
 
     def formatted_value(self) -> Optional[str]:
-        if hasattr(self, "value"):
-            return str(self.value)
-        return None
+        return str(self.value)
 
 
 @dataclass
@@ -55,9 +62,8 @@ class ZeroTerminatedStringAttribute(Attribute, ABC):
     value: str
 
     @classmethod
-    def decode(cls, data: bytes):
-        attr = cls(None)
-        attr.value = (data[0 : len(data)]).decode("ascii")
+    def decode(cls, data: bytes) -> "ZeroTerminatedStringAttribute":
+        attr = cls((data[0 : len(data)]).decode("ascii"))
         return attr
 
     def encode(self) -> bytes:
@@ -67,21 +73,23 @@ class ZeroTerminatedStringAttribute(Attribute, ABC):
         return self.value
 
 
+CT = TypeVar("CT", bound="ComplexTypeAttribute")
+
+
 @dataclass
 class ComplexTypeAttribute(Attribute, ABC):
     value: t.ComplexType
 
     @classmethod
-    def decode(cls, data: bytes):
-        attr = cls(None)
-        attr.value = cls.__dataclass_fields__["value"].type.decode(data)
+    def decode(cls: type[CT], data: bytes) -> CT:
+        attr = cls(cls.__dataclass_fields__["value"].type.decode(data))
         return attr
 
     def encode(self) -> bytes:
         return self.value.encode()
 
     def formatted_value(self) -> Optional[str]:
-        return str(self.value) if self.value else None
+        return str(self.value)
 
 
 @dataclass
@@ -100,7 +108,7 @@ class FirmwareVersionAttribute(Attribute):
     value: int
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls, data: bytes) -> "FirmwareVersionAttribute":
         if len(data) < cls.length():
             raise BufferError(
                 f"FirmwareVersionAttribute buffer too short for message. \
@@ -156,7 +164,7 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
     value: t.AfeSettingsAll
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls, data: bytes) -> "AfeSettingsAllAttribute":
         """Special handling. certain versions of the device returns an empty attribute value."""
 
         if len(data) == 0:
@@ -361,10 +369,11 @@ class ExecuteCommandResponseAfeReadAllRegsAttribute(Attribute):
     value: int
 
 
-def decode_executive_command_response(attribute_id, data: bytes) -> Attribute:
+def decode_executive_command_response(attribute_id, data: bytes) -> Optional[Attribute]:
     """Decodes a bytes object into proper attribute object.
 
     Raises BufferError if data buffer is too short. Returns None if unknown attribute
+    Raises LookupError if unknown message type.
     """
 
     if attribute_id == ExecuteCommandResponseAfeReadAllRegsAttribute.attribute_id:
@@ -374,8 +383,11 @@ def decode_executive_command_response(attribute_id, data: bytes) -> Attribute:
 
 
 def decode_attribute(attribute_id, data: bytes) -> Attribute:
-    """Decodes a bytes object into proper attribute object - raises BufferError if data buffer is too short.
-    Returns None if unknown attribute"""
+    """Decodes a bytes object into proper attribute object.
+
+    Raises BufferError if data buffer is too short.
+    Raises LookupError if unknown message type.
+    """
 
     if attribute_id == SerialNoAttribute.attribute_id:
         return SerialNoAttribute.decode(data)
@@ -437,4 +449,4 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return DiagnosticsAttribute.decode(data)
     if attribute_id == PulseRawListAttribute.attribute_id:
         return PulseRawListAttribute.decode(data)
-    return None
+    raise LookupError(f"Unknown attribute type {attribute_id}")

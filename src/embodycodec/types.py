@@ -6,6 +6,10 @@ import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
+from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import Union
 
 
 class ExecuteCommandType(enum.Enum):
@@ -17,25 +21,32 @@ class ExecuteCommandType(enum.Enum):
     AFE_GAIN_SETTING = 0xA4
 
 
+T = TypeVar("T", bound="ComplexType")
+
+
 @dataclass
 class ComplexType(ABC):
     """Abstract base class for complex types"""
 
     struct_format = ""
+    """pack/unpack format to be overridden by sub-classes"""
 
     @classmethod
-    def length(cls) -> int:
+    def default_length(cls) -> int:
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def decode(cls, data: bytes):
-        if len(data) < cls.length():
+    def decode(cls: type[T], data: bytes) -> T:
+        if len(data) < cls.default_length():
             raise BufferError(
                 f"Buffer too short for message. Received "
-                f"{len(data)} bytes, expected {cls.length()} bytes"
+                f"{len(data)} bytes, expected {cls.default_length()} bytes"
             )
-        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.length()])))
+        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.default_length()])))
         return msg
+
+    def length(self) -> int:
+        return struct.calcsize(self.struct_format)
 
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, *astuple(self))
@@ -82,9 +93,13 @@ class PulseRawList(ComplexType):
     no_of_ppgs: int
     ecgs: list[int]
     ppgs: list[int]
+    len = int(0)
+
+    def length(self) -> int:
+        return self.len
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls, data: bytes) -> "PulseRawList":
         if len(data) < 10:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
@@ -120,7 +135,7 @@ class PulseRawList(ComplexType):
             ecgs=ecgs,
             ppgs=ppgs,
         )
-        msg.length = (
+        msg.len = (
             1
             + (no_of_ecgs * bytes_per_ecg_and_ppg)
             + (no_of_ppgs * bytes_per_ecg_and_ppg)
@@ -248,34 +263,37 @@ class AfeSettings(ComplexType):
 @dataclass
 class AfeSettingsAll(ComplexType):
     struct_format = ">BBBBIIIIiiif"
-    rf_gain: int
-    cf_value: int
-    ecg_gain: int
-    ioffdac_range: int
-    led1: int
-    led2: int
-    led3: int
-    led4: int
-    off_dac1: int
-    off_dac2: int
-    off_dac3: int
-    relative_gain: float
+    rf_gain: Optional[int]
+    cf_value: Optional[int]
+    ecg_gain: Optional[int]
+    ioffdac_range: Optional[int]
+    led1: Optional[int]
+    led2: Optional[int]
+    led3: Optional[int]
+    led4: Optional[int]
+    off_dac1: Optional[int]
+    off_dac2: Optional[int]
+    off_dac3: Optional[int]
+    relative_gain: Optional[float]
+
+
+F = TypeVar("F", bound="File")
 
 
 @dataclass
 class File(ComplexType):
     struct_format = ">26s"
-    file_name: str
+    file_name: Union[str, bytes]
 
     @classmethod
-    def decode(cls, data: bytes):
-        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.length()])))
+    def decode(cls: type[F], data: bytes) -> F:
+        msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.default_length()])))
         if msg.file_name is not None and isinstance(msg.file_name, bytes):
             msg.file_name = msg.file_name.split(b"\x00", maxsplit=1)[0].decode("utf-8")
         return msg
 
     def encode(self) -> bytes:
-        return struct.pack(self.struct_format, self.file_name.encode("utf-8"))
+        return struct.pack(self.struct_format, str(self.file_name).encode("utf-8"))
 
 
 @dataclass
@@ -285,5 +303,5 @@ class FileWithLength(File):
 
     def encode(self) -> bytes:
         return struct.pack(
-            self.struct_format, self.file_name.encode("utf-8"), self.file_size
+            self.struct_format, str(self.file_name).encode("utf-8"), self.file_size
         )
