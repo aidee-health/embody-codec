@@ -1,9 +1,7 @@
 """CRC Utility method(s) used by the embodycodec to generate CRC footers."""
 
 
-def crc16(data: bytes, poly=0x1021):
-    """Calculate CRC-16 from input bytes"""
-
+def crc16(data: bytes, poly: int = 0x1021):
     data = bytearray(data)
     crc = 0xFFFF
     for byte in data:
