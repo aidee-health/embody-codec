@@ -4,79 +4,92 @@ All attribute types inherits from the Attribute class, and provides self-contain
 attributes.
 """
 
-from abc import ABC
-from typing import Optional
-from datetime import datetime, timezone
 import struct
-from dataclasses import dataclass, astuple
-from .types import *
+from abc import ABC
+from dataclasses import astuple
+from dataclasses import dataclass
+from datetime import datetime
+from datetime import timezone
+from typing import Any
+from typing import Optional
+from typing import Type
+from typing import TypeVar
+
+from embodycodec import types as t
+
+
+T = TypeVar("T", bound="Attribute")
 
 
 @dataclass
 class Attribute(ABC):
     """Abstract base class for attribute types"""
 
-    struct_format = None
+    struct_format = ""
     """struct format used to pack/unpack object - must be set by subclasses"""
 
-    attribute_id = None
+    attribute_id = int(-1)
     """attribute id field - must be set by subclasses"""
+
+    value: Any
+    """value is implemented and overridden by subclasses."""
 
     @classmethod
     def length(cls) -> int:
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls: type[T], data: bytes) -> T:
         if len(data) < cls.length():
-            raise BufferError(f"Attribute buffer too short for message. \
-                                Received {len(data)} bytes, expected {cls.length()} bytes")
-        attr = cls(*(struct.unpack(cls.struct_format, data[0:cls.length()])))
+            raise BufferError(
+                f"Attribute buffer too short for message. \
+                                Received {len(data)} bytes, expected {cls.length()} bytes"
+            )
+        attr = cls(*(struct.unpack(cls.struct_format, data[0 : cls.length()])))
         return attr
 
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, *astuple(self))
 
     def formatted_value(self) -> Optional[str]:
-        if hasattr(self, 'value'):
-            return str(self.value)
-        return None
-    
+        return str(self.value)
 
 
 @dataclass
 class ZeroTerminatedStringAttribute(Attribute, ABC):
     """Zero terminated string is actually not zero terminated - only length terminated..."""
+
     value: str
 
     @classmethod
-    def decode(cls, data: bytes):
-        attr = cls(None)
-        attr.value = (data[0:len(data)]).decode('ascii')
+    def decode(cls, data: bytes) -> "ZeroTerminatedStringAttribute":
+        attr = cls((data[0 : len(data)]).decode("ascii"))
         return attr
 
     def encode(self) -> bytes:
-        return bytes(self.value, 'ascii')
+        return bytes(self.value, "ascii")
 
     def formatted_value(self) -> Optional[str]:
         return self.value
 
 
+CT = TypeVar("CT", bound="ComplexTypeAttribute")
+
+
 @dataclass
 class ComplexTypeAttribute(Attribute, ABC):
-    value: ComplexType
+    value: t.ComplexType
 
     @classmethod
-    def decode(cls, data: bytes):
-        attr = cls(None)
-        attr.value = cls.__dataclass_fields__['value'].type.decode(data)
+    def decode(cls: type[CT], data: bytes) -> CT:
+        attr = cls(cls.__dataclass_fields__["value"].type.decode(data))
         return attr
 
     def encode(self) -> bytes:
         return self.value.encode()
-    
+
     def formatted_value(self) -> Optional[str]:
-        return str(self.value) if self.value else None
+        return str(self.value)
 
 
 @dataclass
@@ -95,11 +108,15 @@ class FirmwareVersionAttribute(Attribute):
     value: int
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls, data: bytes) -> "FirmwareVersionAttribute":
         if len(data) < cls.length():
-            raise BufferError(f"FirmwareVersionAttribute buffer too short for message. \
-                                Received {len(data)} bytes, expected {cls.length()} bytes")
-        return FirmwareVersionAttribute(int.from_bytes(data[0:3], byteorder="big", signed=False))
+            raise BufferError(
+                f"FirmwareVersionAttribute buffer too short for message. \
+                                Received {len(data)} bytes, expected {cls.length()} bytes"
+            )
+        return FirmwareVersionAttribute(
+            int.from_bytes(data[0:3], byteorder="big", signed=False)
+        )
 
     def encode(self) -> bytes:
         return int.to_bytes(self.value, length=3, byteorder="big", signed=True)
@@ -110,7 +127,8 @@ class FirmwareVersionAttribute(Attribute):
 
     def formatted_value(self) -> Optional[str]:
         newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True).hex()
-        return '.'.join(newval[i:i+2] for i in range(0, len(newval), 2))
+        return ".".join(newval[i : i + 2] for i in range(0, len(newval), 2))
+
 
 @dataclass
 class BluetoothMacAttribute(Attribute):
@@ -134,26 +152,39 @@ class VendorAttribute(ZeroTerminatedStringAttribute):
 
 @dataclass
 class AfeSettingsAttribute(ComplexTypeAttribute):
-    struct_format = AfeSettings.struct_format
+    struct_format = t.AfeSettings.struct_format
     attribute_id = 0x06
-    value: AfeSettings
+    value: t.AfeSettings
 
 
 @dataclass
 class AfeSettingsAllAttribute(ComplexTypeAttribute):
-    struct_format = AfeSettingsAll.struct_format
+    struct_format = t.AfeSettingsAll.struct_format
     attribute_id = 0x07
-    value: AfeSettingsAll
+    value: t.AfeSettingsAll
 
     @classmethod
-    def decode(cls, data: bytes):
+    def decode(cls, data: bytes) -> "AfeSettingsAllAttribute":
         """Special handling. certain versions of the device returns an empty attribute value."""
 
         if len(data) == 0:
-            return AfeSettingsAllAttribute(value=AfeSettingsAll(rf_gain=None, cf_value=None, ecg_gain=None,
-                    ioffdac_range=None, led1=None, led2=None, led3=None, led4=None, off_dac1=None,
-                    off_dac2=None, off_dac3=None, relative_gain=None))
-        return AfeSettingsAllAttribute(value=AfeSettingsAll.decode(data))
+            return AfeSettingsAllAttribute(
+                value=t.AfeSettingsAll(
+                    rf_gain=None,
+                    cf_value=None,
+                    ecg_gain=None,
+                    ioffdac_range=None,
+                    led1=None,
+                    led2=None,
+                    led3=None,
+                    led4=None,
+                    off_dac1=None,
+                    off_dac2=None,
+                    off_dac3=None,
+                    relative_gain=None,
+                )
+            )
+        return AfeSettingsAllAttribute(value=t.AfeSettingsAll.decode(data))
 
 
 @dataclass
@@ -163,7 +194,11 @@ class CurrentTimeAttribute(Attribute):
     value: int
 
     def formatted_value(self) -> Optional[str]:
-        return datetime.fromtimestamp(self.value / 1000, tz=timezone.utc).replace(microsecond=0).isoformat()
+        return (
+            datetime.fromtimestamp(self.value / 1000, tz=timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+        )
 
 
 @dataclass
@@ -196,23 +231,23 @@ class BatteryLevelAttribute(Attribute):
 
 @dataclass
 class PulseRawAllAttribute(ComplexTypeAttribute):
-    struct_format = PulseRawAll.struct_format
+    struct_format = t.PulseRawAll.struct_format
     attribute_id = 0xA2
-    value: PulseRawAll
+    value: t.PulseRawAll
 
 
 @dataclass
 class BloodPressureAttribute(ComplexTypeAttribute):
-    struct_format = BloodPressure.struct_format
+    struct_format = t.BloodPressure.struct_format
     attribute_id = 0xA3
-    value: BloodPressure
+    value: t.BloodPressure
 
 
 @dataclass
 class ImuAttribute(ComplexTypeAttribute):
-    struct_format = Imu.struct_format
+    struct_format = t.Imu.struct_format
     attribute_id = 0xA4
-    value: Imu
+    value: t.Imu
 
 
 @dataclass
@@ -266,9 +301,9 @@ class FirmwareUpdateProgressAttribute(Attribute):
 
 @dataclass
 class ImuRawAttribute(ComplexTypeAttribute):
-    struct_format = ImuRaw.struct_format
+    struct_format = t.ImuRaw.struct_format
     attribute_id = 0xAC
-    value: ImuRaw
+    value: t.ImuRaw
 
 
 @dataclass
@@ -280,23 +315,23 @@ class HeartRateIntervalAttribute(Attribute):
 
 @dataclass
 class PulseRawAttribute(ComplexTypeAttribute):
-    struct_format = PulseRaw.struct_format
+    struct_format = t.PulseRaw.struct_format
     attribute_id = 0xB1
-    value: PulseRaw
+    value: t.PulseRaw
 
 
 @dataclass
 class AccRawAttribute(ComplexTypeAttribute):
-    struct_format = AccRaw.struct_format
+    struct_format = t.AccRaw.struct_format
     attribute_id = 0xB2
-    value: AccRaw
+    value: t.AccRaw
 
 
 @dataclass
 class GyroRawAttribute(ComplexTypeAttribute):
-    struct_format = GyroRaw.struct_format
+    struct_format = t.GyroRaw.struct_format
     attribute_id = 0xB3
-    value: GyroRaw
+    value: t.GyroRaw
 
 
 @dataclass
@@ -314,16 +349,16 @@ class TemperatureAttribute(Attribute):
 
 @dataclass
 class DiagnosticsAttribute(ComplexTypeAttribute):
-    struct_format = Diagnostics.struct_format
+    struct_format = t.Diagnostics.struct_format
     attribute_id = 0xB5
-    value: Diagnostics
+    value: t.Diagnostics
 
 
 @dataclass
 class PulseRawListAttribute(ComplexTypeAttribute):
-    struct_format = PulseRawList.struct_format
+    struct_format = t.PulseRawList.struct_format
     attribute_id = 0xB6
-    value: PulseRawList
+    value: t.PulseRawList
 
 
 @dataclass
@@ -334,19 +369,25 @@ class ExecuteCommandResponseAfeReadAllRegsAttribute(Attribute):
     value: int
 
 
-def decode_executive_command_response(attribute_id, data: bytes) -> Attribute:
-    """Decodes a bytes object into proper attribute object - raises BufferError if data buffer is too short.
-    Returns None if unknown attribute"""
+def decode_executive_command_response(attribute_id, data: bytes) -> Optional[Attribute]:
+    """Decodes a bytes object into proper attribute object.
+
+    Raises BufferError if data buffer is too short. Returns None if unknown attribute
+    Raises LookupError if unknown message type.
+    """
 
     if attribute_id == ExecuteCommandResponseAfeReadAllRegsAttribute.attribute_id:
         return ExecuteCommandResponseAfeReadAllRegsAttribute.decode(data)
-    
+
     return None
 
 
 def decode_attribute(attribute_id, data: bytes) -> Attribute:
-    """Decodes a bytes object into proper attribute object - raises BufferError if data buffer is too short.
-    Returns None if unknown attribute"""
+    """Decodes a bytes object into proper attribute object.
+
+    Raises BufferError if data buffer is too short.
+    Raises LookupError if unknown message type.
+    """
 
     if attribute_id == SerialNoAttribute.attribute_id:
         return SerialNoAttribute.decode(data)
@@ -408,4 +449,4 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return DiagnosticsAttribute.decode(data)
     if attribute_id == PulseRawListAttribute.attribute_id:
         return PulseRawListAttribute.decode(data)
-    return None
+    raise LookupError(f"Unknown attribute type {attribute_id}")
