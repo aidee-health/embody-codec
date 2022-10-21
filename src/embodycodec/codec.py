@@ -9,6 +9,7 @@ import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
+from dataclasses import field
 from typing import Any
 from typing import List
 from typing import Optional
@@ -144,10 +145,13 @@ class GetAttribute(Message):
 @dataclass
 class GetAttributeResponse(Message):
     msg_type = 0x92
-    attribute_id: int
+    attribute_id: int = field(init=False)
     changed_at: int
     reporting: t.Reporting
     value: a.Attribute
+
+    def __post_init__(self) -> None:
+        self.attribute_id = self.value.attribute_id
 
     @classmethod
     def decode(cls, data: bytes) -> "GetAttributeResponse":
