@@ -193,12 +193,11 @@ class CurrentTimeAttribute(Attribute):
     attribute_id = 0x71
     value: int
 
+    def get_datetime(self) -> datetime:
+        return datetime.fromtimestamp(self.value / 1000, tz=timezone.utc)
+
     def formatted_value(self) -> Optional[str]:
-        return (
-            datetime.fromtimestamp(self.value / 1000, tz=timezone.utc)
-            .replace(microsecond=0)
-            .isoformat()
-        )
+        return self.get_datetime().replace(microsecond=0).isoformat()
 
 
 @dataclass

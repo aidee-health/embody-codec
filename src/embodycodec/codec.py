@@ -697,4 +697,8 @@ def decode(data: bytes) -> Message:
         return ExecuteCommand.decode(data[1:])
     if message_type == ExecuteCommandResponse.msg_type:
         return ExecuteCommandResponse.decode(data[1:])
-    raise LookupError(f"Unknown message type {message_type}")
+    if message_type == DeleteAllFiles.msg_type:
+        return DeleteAllFiles.decode(data[1:])
+    if message_type == DeleteAllFilesResponse.msg_type:
+        return DeleteAllFilesResponse.decode(data[1:])
+    raise LookupError(f"Unknown message type {hex(message_type)}")
