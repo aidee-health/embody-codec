@@ -1,37 +1,62 @@
 # EmBody protocol codec
 
-This is a Python based implementation library for the EmBody/HyperSension communication protocol.
+[![PyPI](https://img.shields.io/pypi/v/embody-codec.svg)][pypi_]
+[![Status](https://img.shields.io/pypi/status/embody-codec.svg)][status]
+[![Python Version](https://img.shields.io/pypi/pyversions/embody-codec)][python version]
+[![License](https://img.shields.io/pypi/l/embody-codec)][license]
+
+[![Tests](https://github.com/aidee-health/embody-codec/workflows/Tests/badge.svg)][tests]
+
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
+
+[pypi_]: https://pypi.org/project/embody-codec/
+[status]: https://pypi.org/project/embody-codec/
+[python version]: https://pypi.org/project/embody-codec
+[tests]: https://github.com/aidee-health/embody-codec/actions?workflow=Tests
+[pre-commit]: https://github.com/pre-commit/pre-commit
+[black]: https://github.com/psf/black
+
+This is a Python based implementation library for the Aidee EmBody communication protocol.
+
+## Features
+
+- Encode protocol messages to binary data (bytes)
+- Decode binary data to protocol messages
+- Accessory code
+
+## Requirements
+
+- This library does not require any external libraries
+- Requires Python 3.9
 
 # Installing package with pip from github
 
-This package is not distributed to PyPi as a regular open source Python package.
+You can install _embody codec_ via [pip] from [PyPI]:
 
-To use this package in other projects, install it from its Github repository, either from the command line:
-
-```
-pip install "git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec"
+```console
+pip install embody-codec
 ```
 
-Or you can add it to your `requirements.txt` (just the URL to the repository):
+## Contributing
 
-```
-git+https://github.com/aidee-health/embody-protocol-codec@main#egg=embodycodec
-```
+Contributions are very welcome. To learn more, see the [Contributor Guide].
 
-Then, run `pip install -r requirements.txt`
+## License
 
-:warning: **Note!** This installs the latest version from master. You can also use any tag, commit id or git ref like
-this:
+Distributed under the terms of the [MIT license][license].
 
-```
-git+https://github.com/aidee-health/embody-protocol-codec@v0.0.1#egg=embodycodec
-git+https://github.com/aidee-health/embody-protocol-codec@da39a3ee5e6b4b0d325ef95601890afd80709#egg=embodycodec
-git+https://github.com/aidee-health/embody-protocol-codec@refs/pull/123/head#egg=embodycodec
-```
+## Issues
 
-# Resources
+If you encounter any problems,
+please [file an issue] along with a detailed description.
 
-- [Python Package tutorial](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
-- [Struct documentation with pack/unpack and format options](https://docs.python.org/3/library/struct.html)
-- [Best practices for project structure according to pytest](https://docs.pytest.org/en/latest/explanation/goodpractices.html)
-- [Using GitHub as a private PiPI server](https://medium.com/network-letters/using-github-as-a-private-python-package-index-server-798a6e1cfdef)
+## Credits
+
+This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter] template.
+
+[@cjolowicz]: https://github.com/cjolowicz
+[pypi]: https://pypi.org/
+[hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
+[file an issue]: https://github.com/espenwest/hypermodern-python/issues
+[pip]: https://pip.pypa.io/
