@@ -81,7 +81,7 @@ Your pull request needs to meet the following guidelines for acceptance:
 - Include unit tests.
 - If your changes add functionality, update the documentation accordingly.
 
-[pull request]: https://github.com/aidee-health/embody-protocol-codec/pulls
+[pull request]: https://github.com/aidee-health/embody-codec/pulls
 
 ## How to add a new library
 
@@ -98,5 +98,7 @@ Changes are made to the _pyproject.toml_ file.
 
 To do a release:
 
-- Create a new branch
-- Run `poetry version`
+- Create a new branch, ie `release-v-1-0-6`
+- Run `poetry version <version>` (replacing `<version>` with the actual new version)
+- Push change and create pull request
+- Merge pull request - release and pypi deployment will be performed automatically
