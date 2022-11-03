@@ -60,3 +60,8 @@ This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter]
 [hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
 [file an issue]: https://github.com/espenwest/hypermodern-python/issues
 [pip]: https://pip.pypa.io/
+
+<!-- github-only -->
+
+[license]: https://github.com/aidee-health/embody-codec/blob/main/LICENSE
+[contributor guide]: https://github.com/aidee-health/embody-codec/blob/main/CONTRIBUTING.md
