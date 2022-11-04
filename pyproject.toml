@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "embody-codec"
-version = "1.0.6"
+version = "1.0.7"
 description = "Embody Protocol Codec"
 authors = ["Aidee Health AS <hello@aidee.io>"]
+license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/aidee-health/embody-protocol-codec"
 repository = "https://github.com/aidee-health/embody-protocol-codec"
@@ -10,14 +11,14 @@ packages = [
     { include = "embodycodec", from = "src" },
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
 ]
 
 [tool.poetry.urls]
 Changelog = "https://github.com/aidee-health/embody-protocol-codec/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.10"
+python = ">=3.8,<4.0"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
