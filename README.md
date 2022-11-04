@@ -28,7 +28,7 @@ This is a Python based implementation library for the Aidee EmBody communication
 ## Requirements
 
 - This library does not require any external libraries
-- Requires Python 3.9
+- Requires Python 3.7+
 
 # Installing package with pip from github
 
