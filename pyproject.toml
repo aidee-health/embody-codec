@@ -18,7 +18,7 @@ classifiers = [
 Changelog = "https://github.com/aidee-health/embody-protocol-codec/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4.0"
+python = ">=3.7,<4.0"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
