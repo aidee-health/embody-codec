@@ -16,14 +16,19 @@ class ProtocolMessage:
     unpack_format = ""
 
     @classmethod
-    def length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: tuple = None) -> int:
         return struct.calcsize(cls.unpack_format)
+
+    def length(self, version: tuple = None) -> int:
+        return self.__class__.default_length(version)
 
     @classmethod
     def decode(cls, data: bytes, version: tuple = None):
-        if len(data) < cls.length(version):
+        if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
-        return cls(*(struct.unpack(cls.unpack_format, data[0 : cls.length(version)])))
+        return cls(
+            *(struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)]))
+        )
 
 
 @dataclass
@@ -32,9 +37,9 @@ class TimetickedMessage(ProtocolMessage):
 
     @classmethod
     def decode(cls, data: bytes, version: tuple = None):
-        if len(data) < cls.length(version):
+        if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
-        tuples = struct.unpack(cls.unpack_format, data[0 : cls.length(version)])
+        tuples = struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)])
         msg = cls(*tuples[1:])
         msg.two_lsb_of_timestamp = tuples[0]
         return msg
@@ -104,12 +109,12 @@ class PpgRaw(TimetickedMessage):
     ppg: int
 
     @classmethod
-    def length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: tuple = None) -> int:
         return 8
 
     @classmethod
     def decode(cls, data: bytes, version: tuple = None):
-        if len(data) < cls.length(version):
+        if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
         ecg = int.from_bytes(data[2:5], byteorder="big", signed=True)
@@ -127,12 +132,12 @@ class PpgRawAll(TimetickedMessage):
     ppg_ir: int
 
     @classmethod
-    def length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: tuple = None) -> int:
         return 14
 
     @classmethod
     def decode(cls, data: bytes, version: tuple = None):
-        if len(data) < cls.length(version):
+        if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
         ecg = int.from_bytes(data[2:5], byteorder="big", signed=True)
@@ -222,6 +227,81 @@ class Temperature(TimetickedMessage):
         return self.temp_raw * 0.0078125
 
 
+@dataclass
+class PulseRawList(ProtocolMessage):
+    two_lsb_of_timestamp: int
+    format: int
+    no_of_ecgs: int
+    no_of_ppgs: int
+    ecgs: list[int]
+    ppgs: list[int]
+    len: int = 6  # actual length, since this is instance specific, not static
+
+    @classmethod
+    def default_length(cls, version: tuple = None) -> int:
+        """Return a dummy value, since this is instance specific for this class."""
+        return 6
+
+    def length(self, version: tuple = None) -> int:
+        return self.len
+
+    @classmethod
+    def decode(cls, data: bytes, version: tuple = None):
+        if len(data) < 3:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
+            )
+        (tick,) = struct.unpack("<H", data[0:2])
+        (format_and_sizes,) = struct.unpack("<B", data[2:3])
+        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(
+            format_and_sizes
+        )
+        ecgs = []
+        ppgs = []
+        bytes_per_ecg_and_ppg = (
+            1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        )
+        length = (
+            3
+            + (no_of_ecgs * bytes_per_ecg_and_ppg)
+            + (no_of_ppgs * bytes_per_ecg_and_ppg)
+        )
+        if len(data) < length:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected {length} bytes"
+            )
+        pos = 3
+        for _ in range(no_of_ecgs):
+            ecg = int.from_bytes(
+                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
+            )
+            ecgs.append(ecg)
+            pos += bytes_per_ecg_and_ppg
+        for _ in range(no_of_ppgs):
+            ppg = int.from_bytes(
+                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
+            )
+            ppgs.append(ppg)
+            pos += bytes_per_ecg_and_ppg
+        msg = PulseRawList(
+            two_lsb_of_timestamp=tick,
+            format=fmt,
+            no_of_ecgs=no_of_ecgs,
+            no_of_ppgs=no_of_ppgs,
+            ecgs=ecgs,
+            ppgs=ppgs,
+        )
+        msg.len = length
+        return msg
+
+    @staticmethod
+    def to_format_and_lengths(format_and_sizes: int) -> tuple:
+        fmt = format_and_sizes & 0x3
+        no_of_ecgs = (format_and_sizes & 0x0F) >> 2
+        no_of_ppgs = (format_and_sizes & 0xF0) >> 4
+        return fmt, no_of_ecgs, no_of_ppgs
+
+
 def decode_message(data: bytes, version: tuple = None) -> ProtocolMessage:
     """Decodes a bytes object into proper subclass of ProtocolMessage.
 
@@ -265,4 +345,6 @@ def decode_message(data: bytes, version: tuple = None) -> ProtocolMessage:
         return GyroRaw.decode(data[1:], version)
     elif message_type == 0xB4:
         return Temperature.decode(data[1:], version)
+    elif message_type == 0xB6:
+        return PulseRawList.decode(data[1:], version)
     raise LookupError(f"Unknown message type {hex(message_type)}")

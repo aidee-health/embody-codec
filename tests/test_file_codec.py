@@ -1,8 +1,10 @@
+import pytest
+
 from embodycodec import file_codec as codec
 
 
 def test_decode_header() -> None:
-    assert 21 == codec.Header.length()
+    assert 21 == codec.Header.default_length()
     header = codec.Header.decode(
         bytes.fromhex("65c6fa2569b1633302040106710000017e5353729d")
     )
@@ -15,18 +17,18 @@ def test_decode_header() -> None:
 
 
 def test_decode_timestamp() -> None:
-    assert 10 == codec.Timestamp.length()
+    assert 10 == codec.Timestamp.default_length()
     timestamp = codec.Timestamp.decode(bytes.fromhex("00020000017e5353729d"))
     assert 2 == timestamp.two_lsb_of_timestamp
     assert 1642075484829 == timestamp.current_time
 
 
 def test_decode_afe_settings_old() -> None:
-    assert 37 == codec.AfeSettingsOld.length()
+    assert 37 == codec.AfeSettingsOld.default_length()
 
 
 def test_decode_afe_settings() -> None:
-    assert 22 == codec.AfeSettings.length()
+    assert 22 == codec.AfeSettings.default_length()
     afe_settings = codec.AfeSettings.decode(
         bytes.fromhex("0002050204000000184900001849fff8ef66424f20d7")
     )
@@ -41,7 +43,7 @@ def test_decode_afe_settings() -> None:
 
 
 def test_decode_afe_settings_all() -> None:
-    assert 38 == codec.AfeSettingsAll.length()
+    assert 38 == codec.AfeSettingsAll.default_length()
     afe_settings = codec.AfeSettingsAll.decode(
         bytes.fromhex(
             "00020502040000001849000018490000184900001849fff8ef64fff8ef65fff8ef66424f20d7"
@@ -63,7 +65,7 @@ def test_decode_afe_settings_all() -> None:
 
 
 def test_decode_ppg_raw() -> None:
-    assert 8 == codec.PpgRaw.length()
+    assert 8 == codec.PpgRaw.default_length()
     ppg_raw = codec.PpgRaw.decode(bytes.fromhex("00020002090357f7"))
     assert 2 == ppg_raw.two_lsb_of_timestamp
     assert 521 == ppg_raw.ecg
@@ -71,7 +73,7 @@ def test_decode_ppg_raw() -> None:
 
 
 def test_decode_ppg_raw_all() -> None:
-    assert 14 == codec.PpgRawAll.length()
+    assert 14 == codec.PpgRawAll.default_length()
     ppg_raw = codec.PpgRawAll.decode(bytes.fromhex("00020002090357f70357f70357f7"))
     assert 2 == ppg_raw.two_lsb_of_timestamp
     assert 521 == ppg_raw.ecg
@@ -81,7 +83,7 @@ def test_decode_ppg_raw_all() -> None:
 
 
 def test_decode_imu_raw() -> None:
-    assert 14 == codec.ImuRaw.length()
+    assert 14 == codec.ImuRaw.default_length()
     imu_raw = codec.ImuRaw.decode(bytes.fromhex("72a7010fc3eb137f002efff7ffdc"))
     assert 29351 == imu_raw.two_lsb_of_timestamp
     assert 271 == imu_raw.acc_x
@@ -93,7 +95,7 @@ def test_decode_imu_raw() -> None:
 
 
 def test_decode_acc_raw() -> None:
-    assert 8 == codec.AccRaw.length()
+    assert 8 == codec.AccRaw.default_length()
     acc_raw = codec.AccRaw.decode(bytes.fromhex("72a7010fc3eb137f"))
     assert 29351 == acc_raw.two_lsb_of_timestamp
     assert 271 == acc_raw.acc_x
@@ -102,7 +104,7 @@ def test_decode_acc_raw() -> None:
 
 
 def test_decode_gyro_raw() -> None:
-    assert 8 == codec.GyroRaw.length()
+    assert 8 == codec.GyroRaw.default_length()
     gyro_raw = codec.GyroRaw.decode(bytes.fromhex("72a7002efff7ffdc"))
     assert 29351 == gyro_raw.two_lsb_of_timestamp
     assert 46 == gyro_raw.gyr_x
@@ -111,59 +113,98 @@ def test_decode_gyro_raw() -> None:
 
 
 def test_decode_imu() -> None:
-    assert 3 == codec.Imu.length()
+    assert 3 == codec.Imu.default_length()
     imu = codec.Imu.decode(bytes.fromhex("72a705"))
     assert 29351 == imu.two_lsb_of_timestamp
     assert 5 == imu.orientation_and_activity
 
 
 def test_battery_level() -> None:
-    assert 3 == codec.BatteryLevel.length()
+    assert 3 == codec.BatteryLevel.default_length()
     level = codec.BatteryLevel.decode(bytes.fromhex("72a705"))
     assert 29351 == level.two_lsb_of_timestamp
     assert 5 == level.level
 
 
 def test_heart_rate() -> None:
-    assert 4 == codec.HeartRate.length()
+    assert 4 == codec.HeartRate.default_length()
     rate = codec.HeartRate.decode(bytes.fromhex("72a70005"))
     assert 29351 == rate.two_lsb_of_timestamp
     assert 5 == rate.rate
 
 
 def test_heart_rate_interval() -> None:
-    assert 4 == codec.HeartRateInterval.length()
+    assert 4 == codec.HeartRateInterval.default_length()
     interval = codec.HeartRateInterval.decode(bytes.fromhex("72a70005"))
     assert 29351 == interval.two_lsb_of_timestamp
     assert 5 == interval.interval
 
 
 def test_no_of_ppg_values() -> None:
-    assert 3 == codec.NoOfPpgValues.length()
+    assert 3 == codec.NoOfPpgValues.default_length()
     vals = codec.NoOfPpgValues.decode(bytes.fromhex("72a703"))
     assert 29351 == vals.two_lsb_of_timestamp
     assert 3 == vals.ppg_values
 
 
 def test_charge_state() -> None:
-    assert 3 == codec.ChargeState.length()
+    assert 3 == codec.ChargeState.default_length()
     state = codec.ChargeState.decode(bytes.fromhex("72a703"))
     assert 29351 == state.two_lsb_of_timestamp
     assert 3 == state.state
 
 
 def test_belt_on_body() -> None:
-    assert 3 == codec.BeltOnBody.length()
+    assert 3 == codec.BeltOnBody.default_length()
     bob = codec.BeltOnBody.decode(bytes.fromhex("72a701"))
     assert 29351 == bob.two_lsb_of_timestamp
     assert 1 == bob.on_body
 
 
 def test_temperature() -> None:
-    assert 4 == codec.Temperature.length()
+    assert 4 == codec.Temperature.default_length()
     temp = codec.Temperature.decode(bytes.fromhex("72a70C80"))
     assert 3200 == temp.temp_raw
     assert 25.0 == temp.temp_celsius()
     temp = codec.Temperature.decode(bytes.fromhex("72a7EC00"))
     assert -5120 == temp.temp_raw
     assert -40.0 == temp.temp_celsius()
+
+
+def test_decode_pulse_raw_list() -> None:
+    ppg_raw = codec.PulseRawList.decode(
+        b"K\x037\x01\x00\x00\x00\xe8\x03\x00\x00d\x00\x00\x00\x05\x00\x00\x00"
+    )
+    assert 843 == ppg_raw.two_lsb_of_timestamp
+    assert 1 == ppg_raw.ecgs[0]
+    assert 1000 == ppg_raw.ppgs[0]
+    assert 100 == ppg_raw.ppgs[1]
+    assert 5 == ppg_raw.ppgs[2]
+    assert 19 == ppg_raw.len
+
+
+def test_decode_pulse_raw_list2() -> None:
+    ppg_raw = codec.PulseRawList.decode(
+        bytes.fromhex("0b354794dafffffb674100d42d8e00bc0fe900fb7cb400")
+    )
+    assert 13579 == ppg_raw.two_lsb_of_timestamp
+    assert 1 == ppg_raw.no_of_ecgs
+    assert 4 == ppg_raw.no_of_ppgs
+    assert -9580 == ppg_raw.ecgs[0]
+    assert 4286459 == ppg_raw.ppgs[0]
+    assert 9317844 == ppg_raw.ppgs[1]
+    assert 15273916 == ppg_raw.ppgs[2]
+    assert 11828475 == ppg_raw.ppgs[3]
+    assert 23 == ppg_raw.length()
+
+
+def test_decode_pulse_raw_list_with_too_short_buffer() -> None:
+    with pytest.raises(BufferError):
+        codec.PulseRawList.decode(bytes.fromhex("0b354794dafffffb674100"))
+
+
+def test_convert_pulse_raw_list_format_from_complex_byte() -> None:
+    fmt, ecg_length, ppg_length = codec.PulseRawList.to_format_and_lengths(0x37)
+    assert fmt == 3
+    assert ecg_length == 1
+    assert ppg_length == 3
