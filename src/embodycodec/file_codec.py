@@ -8,6 +8,7 @@ provides access methods for parsing one and one message from a bytes object.
 import struct
 from dataclasses import dataclass
 from dataclasses import field
+from typing import Optional
 
 
 @dataclass
@@ -16,14 +17,14 @@ class ProtocolMessage:
     unpack_format = ""
 
     @classmethod
-    def default_length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         return struct.calcsize(cls.unpack_format)
 
-    def length(self, version: tuple = None) -> int:
+    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
         return self.__class__.default_length(version)
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple = None):
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         return cls(
@@ -36,7 +37,7 @@ class TimetickedMessage(ProtocolMessage):
     two_lsb_of_timestamp = None  # Dataclass workaround. Not specified with type to avoid having it as a dataclass field
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple = None):
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         tuples = struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)])
@@ -109,11 +110,11 @@ class PpgRaw(TimetickedMessage):
     ppg: int
 
     @classmethod
-    def default_length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         return 8
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple = None):
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
@@ -132,11 +133,11 @@ class PpgRawAll(TimetickedMessage):
     ppg_ir: int
 
     @classmethod
-    def default_length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         return 14
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple = None):
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
@@ -238,15 +239,15 @@ class PulseRawList(ProtocolMessage):
     len: int = 6  # actual length, since this is instance specific, not static
 
     @classmethod
-    def default_length(cls, version: tuple = None) -> int:
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 6
 
-    def length(self, version: tuple = None) -> int:
+    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
         return self.len
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple = None):
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
         if len(data) < 3:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
@@ -302,7 +303,9 @@ class PulseRawList(ProtocolMessage):
         return fmt, no_of_ecgs, no_of_ppgs
 
 
-def decode_message(data: bytes, version: tuple = None) -> ProtocolMessage:
+def decode_message(
+    data: bytes, version: Optional[tuple[int, int, int]] = None
+) -> ProtocolMessage:
     """Decodes a bytes object into proper subclass of ProtocolMessage.
 
     raises LookupError if unknown message type.
