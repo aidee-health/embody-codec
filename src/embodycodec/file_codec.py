@@ -13,7 +13,7 @@ from dataclasses import field
 @dataclass
 class ProtocolMessage:
     # unpack format to be overridden by sub-classes, see https://docs.python.org/3/library/struct.html#format-characters
-    unpack_format = None
+    unpack_format = ""
 
     @classmethod
     def length(cls, version: tuple = None) -> int:
@@ -253,7 +253,7 @@ def decode_message(data: bytes, version: tuple = None) -> ProtocolMessage:
         return ChargeState.decode(data[1:], version)
     elif message_type == 0xAA:
         return BeltOnBody.decode(data[1:], version)
-    elif message_type == 0x06 and version >= (4, 0, 1):
+    elif message_type == 0x06 and isinstance(version, tuple) and version >= (4, 0, 1):
         return AfeSettings.decode(data[1:], version)
     elif message_type == 0x06:
         return AfeSettingsOld.decode(data[1:], version)
