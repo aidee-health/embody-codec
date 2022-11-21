@@ -134,7 +134,7 @@ class PpgRawAll(TimetickedMessage):
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
-        return 14
+        return 11
 
     @classmethod
     def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
@@ -144,7 +144,7 @@ class PpgRawAll(TimetickedMessage):
         ecg = int.from_bytes(data[2:5], byteorder="big", signed=True)
         ppg = int.from_bytes(data[5:8], byteorder="big", signed=True)
         ppg_red = int.from_bytes(data[8:11], byteorder="big", signed=True)
-        ppg_ir = int.from_bytes(data[11:14], byteorder="big", signed=True)
+        ppg_ir = ppg_red
         msg = PpgRawAll(ecg, ppg, ppg_red, ppg_ir)
         msg.two_lsb_of_timestamp = ts_lsb
         return msg
