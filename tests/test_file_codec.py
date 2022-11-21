@@ -73,8 +73,8 @@ def test_decode_ppg_raw() -> None:
 
 
 def test_decode_ppg_raw_all() -> None:
-    assert 14 == codec.PpgRawAll.default_length()
-    ppg_raw = codec.PpgRawAll.decode(bytes.fromhex("00020002090357f70357f70357f7"))
+    assert 11 == codec.PpgRawAll.default_length()
+    ppg_raw = codec.PpgRawAll.decode(bytes.fromhex("00020002090357f70357f7"))
     assert 2 == ppg_raw.two_lsb_of_timestamp
     assert 521 == ppg_raw.ecg
     assert 219127 == ppg_raw.ppg
