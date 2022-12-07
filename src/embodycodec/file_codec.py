@@ -229,8 +229,7 @@ class Temperature(TimetickedMessage):
 
 
 @dataclass
-class PulseRawList(ProtocolMessage):
-    two_lsb_of_timestamp: int
+class PulseRawList(TimetickedMessage):
     format: int
     no_of_ecgs: int
     no_of_ppgs: int
@@ -285,13 +284,13 @@ class PulseRawList(ProtocolMessage):
             ppgs.append(ppg)
             pos += bytes_per_ecg_and_ppg
         msg = PulseRawList(
-            two_lsb_of_timestamp=tick,
             format=fmt,
             no_of_ecgs=no_of_ecgs,
             no_of_ppgs=no_of_ppgs,
             ecgs=ecgs,
             ppgs=ppgs,
         )
+        msg.two_lsb_of_timestamp = tick
         msg.len = length
         return msg
 
