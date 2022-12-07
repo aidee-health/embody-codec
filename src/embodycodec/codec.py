@@ -707,7 +707,7 @@ def decode(data: bytes) -> Message:
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
         raise DecodeError(
-            f"Error decoding message type {hex(message_type)} hex dump: {hexdump}"
+            f"Error decoding message type {hex(message_type)}. Message payload: {hexdump}"
         ) from e
 
     raise LookupError(f"Unknown message type {hex(message_type)}")
