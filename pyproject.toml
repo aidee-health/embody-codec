@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "embody-codec"
-version = "1.0.14"
+version = "1.0.15"
 description = "Embody Protocol Codec"
 authors = ["Aidee Health AS <hello@aidee.io>"]
 license = "MIT"
