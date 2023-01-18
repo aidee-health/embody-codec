@@ -368,6 +368,40 @@ class ExecuteCommandResponseAfeReadAllRegsAttribute(Attribute):
     value: int
 
 
+@dataclass
+class LedsAttribute(Attribute):
+    struct_format = ">B"
+    attribute_id = 0xC2
+    value: int
+
+    def led1(self) -> bool:
+        return bool(self.value & 0b00000001)
+
+    def led1_blinking(self) -> bool:
+        return bool(self.value & 0b00010000)
+
+    def led2(self) -> bool:
+        return bool(self.value & 0b00000010)
+
+    def led2_blinking(self) -> bool:
+        return bool(self.value & 0b00100000)
+
+    def led3(self) -> bool:
+        return bool(self.value & 0b00000100)
+
+    def led3_blinking(self) -> bool:
+        return bool(self.value & 0b01000000)
+
+    def formatted_value(self) -> Optional[str]:
+        if not self.value:
+            return None
+        return (
+            f"L1: {self.led1()}, L1_blinking: {self.led1_blinking()}, "
+            f"L2: {self.led2()}, L2_blinking: {self.led2_blinking()},"
+            f"L3: {self.led3()}, L3_blinking: {self.led3_blinking()}"
+        )
+
+
 def decode_executive_command_response(attribute_id, data: bytes) -> Optional[Attribute]:
     """Decodes a bytes object into proper attribute object.
 
@@ -448,4 +482,6 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return DiagnosticsAttribute.decode(data)
     if attribute_id == PulseRawListAttribute.attribute_id:
         return PulseRawListAttribute.decode(data)
+    if attribute_id == LedsAttribute.attribute_id:
+        return LedsAttribute.decode(data)
     raise LookupError(f"Unknown attribute type {attribute_id}")
