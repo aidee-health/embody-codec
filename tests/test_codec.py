@@ -248,10 +248,8 @@ def test_raw_pulse_changed_3_ppgs() -> None:
         ),
     )
     encoded = response.encode()
-    assert (
-        encoded
-        == b"\x22\x00\x17\x00\x01\x02\x93\x65\xF1\x07\x5B\xCD\x15\x3A\xDE\x68\xB1\x19\xC2\xD4\x6D\xCC\x8C"
-    )
+    assert encoded == bytes.fromhex("2200170001029365f1075bcd153ade68b119c2d46dcc8c")
+    print(encoded.hex())
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.RawPulseChanged)
     assert decoded.length == 23
@@ -283,9 +281,8 @@ def test_raw_pulse_list_changed() -> None:
         ),
     )
     encoded = response.encode()
-    assert (
-        encoded
-        == b"$\x00\x19\xb6K\x037Na\xbc\x00\xb1\x7f9\x050A\xab\x00\xcf\x9fJ\x05NS"
+    assert encoded == bytes.fromhex(
+        "240019b64b03374e61bc00b17f39053041ab00cf9f4a054e53"
     )
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.RawPulseListChanged)

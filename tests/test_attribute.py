@@ -130,6 +130,17 @@ def test_encode_decode_battery_level() -> None:
     do_test_encode_decode_attribute(attributes.BatteryLevelAttribute(3), b"\x03")
 
 
+def test_encode_decode_leds() -> None:
+    attr = do_test_encode_decode_attribute(attributes.LedsAttribute(5), b"\x05")
+    assert isinstance(attr, attributes.LedsAttribute)
+    assert attr.led1()
+    assert not attr.led2()
+    assert attr.led3()
+    assert not attr.led1_blinking()
+    assert not attr.led2_blinking()
+    assert not attr.led3_blinking()
+
+
 def test_encode_decode_pulse_raw() -> None:
     do_test_encode_decode_attribute(
         attributes.PulseRawAttribute(value=types.PulseRaw(ecg=1, ppg=1000)),

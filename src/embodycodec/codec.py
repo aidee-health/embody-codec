@@ -543,6 +543,7 @@ class ExecuteCommand(Message):
     command_types = {
         0x01: "Reset device",
         0x02: "Reboot device",
+        0x03: "Press button",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
