@@ -1,3 +1,4 @@
+import struct
 from datetime import datetime
 
 from embodycodec import attributes
@@ -662,6 +663,16 @@ def test_execute_command() -> None:
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ExecuteCommand)
     assert decoded.length == 6
+
+
+def test_execute_press_button_command() -> None:
+    response = codec.ExecuteCommand(0x03, struct.pack(">BH", 1, 1000))
+    encoded = response.encode()
+    print(encoded.hex())
+    assert encoded == bytes.fromhex("510009030103E88EDD")
+    decoded = codec.decode(encoded)
+    assert isinstance(decoded, codec.ExecuteCommand)
+    assert decoded.length == 9
 
 
 def test_execute_command_response() -> None:

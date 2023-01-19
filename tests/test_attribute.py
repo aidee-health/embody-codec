@@ -136,9 +136,8 @@ def test_encode_decode_leds() -> None:
     assert attr.led1()
     assert attr.led1_blinking()
     assert not attr.led2()
-    assert not attr.led3()
-    assert not attr.led1_blinking()
     assert not attr.led2_blinking()
+    assert not attr.led3()
     assert not attr.led3_blinking()
 
 

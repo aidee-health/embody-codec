@@ -375,22 +375,22 @@ class LedsAttribute(Attribute):
     value: int
 
     def led1(self) -> bool:
-        return bool(self.value & 0b00000001)
+        return bool(self.value & 0b1)
 
     def led1_blinking(self) -> bool:
-        return bool(self.value & 0b00010000)
+        return bool(self.value & 0b10)
 
     def led2(self) -> bool:
-        return bool(self.value & 0b00000010)
+        return bool(self.value & 0b100)
 
     def led2_blinking(self) -> bool:
-        return bool(self.value & 0b00100000)
+        return bool(self.value & 0b1000)
 
     def led3(self) -> bool:
-        return bool(self.value & 0b00000100)
+        return bool(self.value & 0b10000)
 
     def led3_blinking(self) -> bool:
-        return bool(self.value & 0b01000000)
+        return bool(self.value & 0b100000)
 
     def formatted_value(self) -> Optional[str]:
         if not self.value:

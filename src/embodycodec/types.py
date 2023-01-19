@@ -15,6 +15,7 @@ from typing import Union
 class ExecuteCommandType(enum.Enum):
     RESET_DEVICE = 0x01
     REBOOT_DEVICE = 0x02
+    PRESS_BUTTON = 0x03
     AFE_READ_ALL_REGISTERS = 0xA1
     AFE_WRITE_REGISTER = 0xA2
     AFE_CALIBRATION_COMMAND = 0xA3
