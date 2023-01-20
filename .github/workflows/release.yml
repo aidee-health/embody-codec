@@ -16,6 +16,11 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Run Labeler
+        uses: crazy-max/ghaction-github-labeler@v4.1.0
+        with:
+          skip-delete: true
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
