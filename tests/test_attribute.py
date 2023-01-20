@@ -131,13 +131,13 @@ def test_encode_decode_battery_level() -> None:
 
 
 def test_encode_decode_leds() -> None:
-    attr = do_test_encode_decode_attribute(attributes.LedsAttribute(5), b"\x05")
+    attr = do_test_encode_decode_attribute(attributes.LedsAttribute(3), b"\x03")
     assert isinstance(attr, attributes.LedsAttribute)
     assert attr.led1()
+    assert attr.led1_blinking()
     assert not attr.led2()
-    assert attr.led3()
-    assert not attr.led1_blinking()
     assert not attr.led2_blinking()
+    assert not attr.led3()
     assert not attr.led3_blinking()
 
 

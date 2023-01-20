@@ -41,7 +41,10 @@ You need Python 3.9+ and the following tools:
 Install the package with development requirements:
 
 ```console
+# install package with development requirements
 $ poetry install
+# setup pre-commit hooks
+$ nox --session=pre-commit -- install
 ```
 
 Note that most python IDEs has support for poetry as the intepreter.

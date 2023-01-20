@@ -543,7 +543,7 @@ class ExecuteCommand(Message):
     command_types = {
         0x01: "Reset device",
         0x02: "Reboot device",
-        0x03: "Press button",
+        0x03: "Press button <press count (1 byte)><press duration in ms (2 bytes)>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -566,6 +566,10 @@ class ExecuteCommand(Message):
         return msg
 
     def _encode_body(self) -> bytes:
+        if self.command_id == t.ExecuteCommandType.PRESS_BUTTON.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            return attribute_part + self.value
+
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
