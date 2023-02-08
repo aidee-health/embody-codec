@@ -126,6 +126,10 @@ def test_encode_decode_no_of_ppg_values() -> None:
     do_test_encode_decode_attribute(attributes.NoOfPpgValuesAttribute(3), b"\x03")
 
 
+def test_encode_decode_override_auto_rec() -> None:
+    do_test_encode_decode_attribute(attributes.DisableAutoRecAttribute(1), b"\x01")
+
+
 def test_encode_decode_battery_level() -> None:
     do_test_encode_decode_attribute(attributes.BatteryLevelAttribute(3), b"\x03")
 

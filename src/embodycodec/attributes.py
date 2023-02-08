@@ -222,6 +222,13 @@ class NoOfPpgValuesAttribute(Attribute):
 
 
 @dataclass
+class DisableAutoRecAttribute(Attribute):
+    struct_format = ">B"
+    attribute_id = 0x75
+    value: int
+
+
+@dataclass
 class BatteryLevelAttribute(Attribute):
     struct_format = ">B"
     attribute_id = 0xA1
@@ -444,6 +451,8 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return TraceLevelAttribute.decode(data)
     if attribute_id == NoOfPpgValuesAttribute.attribute_id:
         return NoOfPpgValuesAttribute.decode(data)
+    if attribute_id == DisableAutoRecAttribute.attribute_id:
+        return DisableAutoRecAttribute.decode(data)
     if attribute_id == BatteryLevelAttribute.attribute_id:
         return BatteryLevelAttribute.decode(data)
     if attribute_id == PulseRawAllAttribute.attribute_id:
