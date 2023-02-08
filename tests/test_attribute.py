@@ -127,7 +127,7 @@ def test_encode_decode_no_of_ppg_values() -> None:
 
 
 def test_encode_decode_override_auto_rec() -> None:
-    do_test_encode_decode_attribute(attributes.OverrideAutoRecAttribute(1), b"\x01")
+    do_test_encode_decode_attribute(attributes.DisableAutoRecAttribute(1), b"\x01")
 
 
 def test_encode_decode_battery_level() -> None:
