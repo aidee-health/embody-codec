@@ -4,11 +4,15 @@ on:
   push:
     branches:
       - main
-      - master
 
 jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
+
   release:
     name: Release
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
