@@ -249,6 +249,22 @@ class Diagnostics(ComplexType):
 
 
 @dataclass
+class BatteryDiagnostics(ComplexType):
+    struct_format = "<IIHHhhHHHH"
+    ttf: int  # s Time To Full
+    tte: int  # s Time To Empty
+    voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
+    avg_voltage: int  # mV *10 (0-6553.5 mV) Average Battery Voltage
+    current: int  # mA *100 (-327.68 - +327.67 mA) Battery Current
+    avg_current: int  # mA *100 (-327.68 - +327.67 mA) Average Battery Current
+    full_cap: int
+    # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
+    rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
+    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
+
+
+@dataclass
 class AfeSettings(ComplexType):
     struct_format = ">BBBBIIif"
     rf_gain: int
