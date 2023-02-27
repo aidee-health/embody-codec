@@ -263,6 +263,16 @@ class BatteryDiagnostics(ComplexType):
     repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
+    def to_str(self):
+        return (
+            f"ttf: {self.ttf}, tte: {self.tte}, voltage: {self.voltage} ({self.voltage * 10}mV), "
+            f"avg_voltage: {self.avg_voltage} ({self.avg_voltage * 10}mV), current: {self.current}"
+            f"({self.current * 100}mAh), avg_current: {self.avg_current} ({self.avg_current * 100}mAh), "
+            f"full_cap: {self.full_cap} ({self.full_cap * 100}mAh), rep_cap: {self.rep_cap} "
+            f"({self.rep_cap * 100}mAh), repsoc: {self.repsoc} ({self.repsoc * 100}%), "
+            f"vfsoc: {self.vfsoc} ({self.vfsoc * 100}%)"
+        )
+
 
 @dataclass
 class AfeSettings(ComplexType):
