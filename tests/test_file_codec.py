@@ -208,3 +208,20 @@ def test_convert_pulse_raw_list_format_from_complex_byte() -> None:
     assert fmt == 3
     assert ecg_length == 1
     assert ppg_length == 3
+
+
+def test_decode_battery_diagnostics() -> None:
+    diag = codec.BatteryDiagnostics.decode(
+        bytes.fromhex("0b35010000000200000003000400050006000700080009000A00")
+    )
+    assert 13579 == diag.two_lsb_of_timestamp
+    assert 1 == diag.ttf
+    assert 2 == diag.tte
+    assert 3 == diag.voltage
+    assert 4 == diag.avg_voltage
+    assert 5 == diag.current
+    assert 6 == diag.avg_current
+    assert 7 == diag.full_cap
+    assert 8 == diag.rep_cap
+    assert 9 == diag.repsoc
+    assert 10 == diag.vfsoc

@@ -361,6 +361,13 @@ class DiagnosticsAttribute(ComplexTypeAttribute):
 
 
 @dataclass
+class BatteryDiagnosticsAttribute(ComplexTypeAttribute):
+    struct_format = t.BatteryDiagnostics.struct_format
+    attribute_id = 0xBB
+    value: t.BatteryDiagnostics
+
+
+@dataclass
 class PulseRawListAttribute(ComplexTypeAttribute):
     struct_format = t.PulseRawList.struct_format
     attribute_id = 0xB6
@@ -489,6 +496,8 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return TemperatureAttribute.decode(data)
     if attribute_id == DiagnosticsAttribute.attribute_id:
         return DiagnosticsAttribute.decode(data)
+    if attribute_id == BatteryDiagnosticsAttribute.attribute_id:
+        return BatteryDiagnosticsAttribute.decode(data)
     if attribute_id == PulseRawListAttribute.attribute_id:
         return PulseRawListAttribute.decode(data)
     if attribute_id == LedsAttribute.attribute_id:

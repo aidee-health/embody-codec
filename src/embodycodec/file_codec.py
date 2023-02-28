@@ -302,6 +302,37 @@ class PulseRawList(TimetickedMessage):
         return fmt, no_of_ecgs, no_of_ppgs
 
 
+@dataclass
+class BatteryDiagnostics(TimetickedMessage):
+    struct_format = "<IIHHhhHHHH"
+    ttf: int  # s Time To Full
+    tte: int  # s Time To Empty
+    voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
+    avg_voltage: int  # mV *10 (0-6553.5 mV) Average Battery Voltage
+    current: int  # mA *100 (-327.68 - +327.67 mA) Battery Current
+    avg_current: int  # mA *100 (-327.68 - +327.67 mA) Average Battery Current
+    full_cap: int
+    # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
+    rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
+    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
+
+    @classmethod
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+        return 24
+
+    @classmethod
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+        if len(data) < cls.default_length(version):
+            raise BufferError("Buffer too short for message")
+        ts_lsb = int.from_bytes(data[0:2], byteorder="little", signed=False)
+        msg = BatteryDiagnostics(
+            *struct.unpack(BatteryDiagnostics.struct_format, data[2:])
+        )
+        msg.two_lsb_of_timestamp = ts_lsb
+        return msg
+
+
 def decode_message(
     data: bytes, version: Optional[tuple[int, int, int]] = None
 ) -> ProtocolMessage:
@@ -349,4 +380,6 @@ def decode_message(
         return Temperature.decode(data[1:], version)
     elif message_type == 0xB6:
         return PulseRawList.decode(data[1:], version)
+    elif message_type == 0xBB:
+        return BatteryDiagnostics.decode(data[1:], version)
     raise LookupError(f"Unknown message type {hex(message_type)}")
