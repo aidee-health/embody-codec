@@ -304,6 +304,7 @@ class PulseRawList(TimetickedMessage):
 
 @dataclass
 class BatteryDiagnostics(TimetickedMessage):
+    struct_format = "<IIHHhhHHHH"
     ttf: int  # s Time To Full
     tte: int  # s Time To Empty
     voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
@@ -325,27 +326,8 @@ class BatteryDiagnostics(TimetickedMessage):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="little", signed=False)
-        ttf = int.from_bytes(data[2:6], byteorder="little", signed=False)
-        tte = int.from_bytes(data[6:10], byteorder="little", signed=False)
-        voltage = int.from_bytes(data[10:12], byteorder="little", signed=False)
-        avg_voltage = int.from_bytes(data[12:14], byteorder="little", signed=False)
-        current = int.from_bytes(data[14:16], byteorder="little", signed=True)
-        avg_current = int.from_bytes(data[16:18], byteorder="little", signed=True)
-        full_cap = int.from_bytes(data[18:20], byteorder="little", signed=False)
-        rep_cap = int.from_bytes(data[20:22], byteorder="little", signed=False)
-        repsoc = int.from_bytes(data[22:24], byteorder="little", signed=False)
-        vfsoc = int.from_bytes(data[24:26], byteorder="little", signed=False)
         msg = BatteryDiagnostics(
-            ttf,
-            tte,
-            voltage,
-            avg_voltage,
-            current,
-            avg_current,
-            full_cap,
-            rep_cap,
-            repsoc,
-            vfsoc,
+            *struct.unpack(BatteryDiagnostics.struct_format, data[2:])
         )
         msg.two_lsb_of_timestamp = ts_lsb
         return msg
