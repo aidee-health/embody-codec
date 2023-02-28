@@ -707,6 +707,17 @@ def test_get_attribute_response_afe_settings_all() -> None:
     assert msg.value.value is not None
 
 
+def test_get_attribute_response_battery_diagnostics() -> None:
+    msg = codec.decode(
+        bytes.fromhex(
+            "92002ABB000000def8e22fec000000180b35010000000200000003000400050006000700080009000A0069fa"
+        )
+    )
+    assert isinstance(msg, codec.GetAttributeResponse)
+    assert isinstance(msg.value, attributes.BatteryDiagnosticsAttribute)
+    assert msg.value.value is not None
+
+
 # helper method for get_attribute_response tests
 def do_test_get_attribute_response_and_return_decoded(
     attribute: attributes.Attribute, expected_encoded: bytes

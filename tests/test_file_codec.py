@@ -225,3 +225,10 @@ def test_decode_battery_diagnostics() -> None:
     assert 8 == diag.rep_cap
     assert 9 == diag.repsoc
     assert 10 == diag.vfsoc
+
+
+def test_decode_generic_message() -> None:
+    msg = codec.decode_message(
+        bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00")
+    )
+    assert isinstance(msg, codec.BatteryDiagnostics)

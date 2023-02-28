@@ -319,7 +319,7 @@ class BatteryDiagnostics(TimetickedMessage):
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
-        return 24
+        return struct.calcsize(cls.struct_format)
 
     @classmethod
     def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
@@ -327,7 +327,10 @@ class BatteryDiagnostics(TimetickedMessage):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="little", signed=False)
         msg = BatteryDiagnostics(
-            *struct.unpack(BatteryDiagnostics.struct_format, data[2:])
+            *struct.unpack(
+                BatteryDiagnostics.struct_format,
+                data[2 : cls.default_length(version) + 2],
+            )
         )
         msg.two_lsb_of_timestamp = ts_lsb
         return msg
