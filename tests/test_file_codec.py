@@ -232,3 +232,5 @@ def test_decode_generic_message() -> None:
         bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00")
     )
     assert isinstance(msg, codec.BatteryDiagnostics)
+    assert 24 == msg.length()
+    assert 24 == codec.BatteryDiagnostics.default_length()
