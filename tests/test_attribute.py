@@ -326,6 +326,19 @@ def test_encode_decode_diagnostics() -> None:
     )
 
 
+def test_encode_decode_flashinfo() -> None:
+    do_test_encode_decode_attribute(
+        attributes.FlashInfoAttribute(
+            value=types.FlashInfo(
+                files=12,
+                used=9823,
+                free=177,
+            )
+        ),
+        b"\x0c_&\xb1\x00",
+    )
+
+
 def do_test_encode_decode_attribute(
     attribute: attributes.Attribute, expected_encoded: bytes
 ):

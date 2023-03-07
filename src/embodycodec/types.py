@@ -225,6 +225,14 @@ class GyroRaw(ComplexType):
 
 
 @dataclass
+class FlashInfo(ComplexType):
+    struct_format = "<BHH"
+    files: int = 0
+    used: int = 0
+    free: int = 0
+
+
+@dataclass
 class Recording(ComplexType):
     struct_format = ">BBBBBB"
     day_start: int
