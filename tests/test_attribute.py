@@ -27,6 +27,10 @@ def test_firmware_version_format_value() -> None:
     assert attributes.FirmwareVersionAttribute(0x010203).formatted_value() == "01.02.03"
 
 
+def test_firmware_version_format_value_high_hex() -> None:
+    assert attributes.FirmwareVersionAttribute(0x05030D).formatted_value() == "05.03.13"
+
+
 def test_encode_decode_bluetooth_mac() -> None:
     do_test_encode_decode_attribute(
         attributes.BluetoothMacAttribute(12345678),

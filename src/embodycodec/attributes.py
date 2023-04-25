@@ -126,8 +126,8 @@ class FirmwareVersionAttribute(Attribute):
         return 3
 
     def formatted_value(self) -> Optional[str]:
-        newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True).hex()
-        return ".".join(newval[i : i + 2] for i in range(0, len(newval), 2))
+        newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True)
+        return ".".join(str(newval[i]).zfill(2) for i in range(0, len(newval), 1))
 
 
 @dataclass
