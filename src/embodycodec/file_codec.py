@@ -302,6 +302,100 @@ class PulseRawList(TimetickedMessage):
         return fmt, no_of_ecgs, no_of_ppgs
 
 
+
+
+@dataclass
+class PulseBlockEcg(TimetickedMessage):
+    time: int
+    num_samples: int
+    ecgs: list[int]
+    len = int(0)
+
+    @classmethod
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+        """Return a dummy value, since this is instance specific for this class."""
+        return 13
+
+    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+        return self.len
+
+    @classmethod
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockEcg":
+        if len(data) < 13:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
+        packed_ecgs = data[0]
+        (time,) = struct.unpack("<Q", data[1:9])
+        ecgs = []
+        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
+        ecgs.append(ref)
+        pos = 13
+        for _ in range(packed_ecgs):
+            ecg = ref + int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=True
+            )
+            ecgs.append(ecg)
+            pos += 2
+        msg = PulseBlockEcg(
+            time=time,
+            num_samples=packed_ecgs+1,
+            ecgs=ecgs,
+        )
+        msg.len = 1 + 8 + 4 + (packed_ecgs * 2)
+        return msg
+
+    def encode(self) -> bytes:
+        payload = struct.pack("<H", 0)
+        return payload
+
+
+@dataclass
+class PulseBlockPpg(TimetickedMessage):
+    time: int
+    num_samples: int
+    ppgs: list[int]
+    len = int(0)
+
+    @classmethod
+    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+        """Return a dummy value, since this is instance specific for this class."""
+        return 13
+
+    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+        return self.len
+
+    @classmethod
+    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockPpg":
+        if len(data) < 13:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
+        packed_ppgs = data[0]
+        (time,) = struct.unpack("<Q", data[1:9])
+        ppgs = []
+        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
+        ppgs.append(ref)
+        pos = 13
+        for _ in range(packed_ppgs):
+            ppg = ref + int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=True
+            )
+            ppgs.append(ppg)
+            pos += 2
+        msg = PulseBlockPpg(
+            time=time,
+            num_samples=packed_ppgs+1,
+            ppgs=ppgs,
+        )
+        msg.len = 1 + 8 + 4 + (packed_ppgs * 2)
+        return msg
+
+    def encode(self) -> bytes:
+        payload = struct.pack("<H", 0)
+        return payload
+
+
 @dataclass
 class BatteryDiagnostics(TimetickedMessage):
     struct_format = "<IIHHhhHHHH"
@@ -383,6 +477,10 @@ def decode_message(
         return Temperature.decode(data[1:], version)
     elif message_type == 0xB6:
         return PulseRawList.decode(data[1:], version)
+    elif message_type == 0xB8:
+        return PulseBlockEcg.decode(data[1:], version)
+    elif message_type == 0xB9:
+        return PulseBlockPpg.decode(data[1:], version)
     elif message_type == 0xBB:
         return BatteryDiagnostics.decode(data[1:], version)
     raise LookupError(f"Unknown message type {hex(message_type)}")

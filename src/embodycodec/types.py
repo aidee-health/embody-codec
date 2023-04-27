@@ -192,6 +192,88 @@ class PulseRawList(ComplexType):
 
 
 @dataclass
+class PulseBlockEcg(ComplexType):
+    time: int
+    num_samples: int
+    ecgs: list[int]
+    len = int(0)
+
+    def length(self) -> int:
+        return self.len
+
+    @classmethod
+    def decode(cls, data: bytes) -> "PulseBlockEcg":
+        if len(data) < 13:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
+        packed_ecgs = data[0]
+        (time,) = struct.unpack("<Q", data[1:9])
+        ecgs = []
+        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
+        ecgs.append(ref)
+        pos = 13
+        for _ in range(packed_ecgs):
+            ecg = ref + int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=True
+            )
+            ecgs.append(ecg)
+            pos += 2
+        msg = PulseBlockEcg(
+            time=time,
+            num_samples=packed_ecgs+1,
+            ecgs=ecgs,
+        )
+        msg.len = 1 + 8 + 4 + (packed_ecgs * 2)
+        return msg
+
+    def encode(self) -> bytes:
+        payload = struct.pack("<H", 0)
+        return payload
+
+
+@dataclass
+class PulseBlockPpg(ComplexType):
+    time: int
+    num_samples: int
+    ppgs: list[int]
+    len = int(0)
+
+    def length(self) -> int:
+        return self.len
+
+    @classmethod
+    def decode(cls, data: bytes) -> "PulseBlockPpg":
+        if len(data) < 13:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
+        packed_ppgs = data[0]
+        (time,) = struct.unpack("<Q", data[1:9])
+        ppgs = []
+        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
+        ppgs.append(ref)
+        pos = 13
+        for _ in range(packed_ppgs):
+            ppg = ref + int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=True
+            )
+            ppgs.append(ppg)
+            pos += 2
+        msg = PulseBlockPpg(
+            time=time,
+            num_samples=packed_ecgs+1,
+            ppgs=ppgs,
+        )
+        msg.len = 1 + 8 + 4 + (packed_ppgs * 2)
+        return msg
+
+    def encode(self) -> bytes:
+        payload = struct.pack("<H", 0)
+        return payload
+
+
+@dataclass
 class Imu(ComplexType):
     struct_format = ">B"
     orientation_and_activity: int
