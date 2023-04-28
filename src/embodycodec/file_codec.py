@@ -307,45 +307,48 @@ class PulseRawList(TimetickedMessage):
 @dataclass
 class PulseBlockEcg(TimetickedMessage):
     time: int
+    channel: int
     num_samples: int
-    ecgs: list[int]
+    samples: list[int]
     pkg_length: int
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
-        return 13
+        return 14
 
     def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
         return self.pkg_length
 
     @classmethod
     def decode(self, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockEcg":
-        if len(data) < 13:
+        if len(data) < 14:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
-        packed_ecgs = data[0]
-        pkg_length = 1 + 8 + 4 + (packed_ecgs * 2)
+        channel = data[0]
+        packed_ecgs = data[1]
+        pkg_length = 1 + 1 + 8 + 4 + (packed_ecgs * 2)
         if len(data) < pkg_length:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
-        (time,) = struct.unpack("<Q", data[1:9])
-        ecgs = []
-        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
-        ecgs.append(ref)
-        pos = 13
+        (time,) = struct.unpack("<Q", data[2:10])
+        samples = []
+        ref = int.from_bytes( data[10:14], byteorder="little", signed=True )
+        samples.append(ref)
+        pos = 14
         for _ in range(packed_ecgs):
-            ecg = ref + int.from_bytes(
+            sample = ref + int.from_bytes(
                 data[pos : pos + 2], byteorder="little", signed=True
             )
-            ecgs.append(ecg)
+            samples.append(sample)
             pos += 2
         msg = PulseBlockEcg(
             time=time,
+            channel=channel,
             num_samples=packed_ecgs+1,
-            ecgs=ecgs,
+            samples=samples,
             pkg_length=pkg_length,
         )
         return msg
@@ -358,14 +361,15 @@ class PulseBlockEcg(TimetickedMessage):
 @dataclass
 class PulseBlockPpg(TimetickedMessage):
     time: int
+    channel: int
     num_samples: int
-    ppgs: list[int]
+    samples: list[int]
     pkg_length: int
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
-        return 13
+        return 14
 
     def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
         return self.pkg_length
@@ -376,27 +380,29 @@ class PulseBlockPpg(TimetickedMessage):
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
-        packed_ppgs = data[0]
-        pkg_length = 1 + 8 + 4 + (packed_ppgs * 2)
+        channel = data[0]
+        packed_ppgs = data[1]
+        pkg_length = 1 + 1 + 8 + 4 + (packed_ppgs * 2)
         if len(data) < pkg_length:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
-        (time,) = struct.unpack("<Q", data[1:9])
-        ppgs = []
-        ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
-        ppgs.append(ref)
-        pos = 13
+        (time,) = struct.unpack("<Q", data[2:10])
+        samples = []
+        ref = int.from_bytes( data[10:14], byteorder="little", signed=True )
+        samples.append(ref)
+        pos = 14
         for _ in range(packed_ppgs):
-            ppg = ref + int.from_bytes(
+            sample = ref + int.from_bytes(
                 data[pos : pos + 2], byteorder="little", signed=True
             )
-            ppgs.append(ppg)
+            samples.append(sample)
             pos += 2
         msg = PulseBlockPpg(
             time=time,
+            channel=channel,
             num_samples=packed_ppgs+1,
-            ppgs=ppgs,
+            samples=samples,
             pkg_length=pkg_length,
         )
         return msg
