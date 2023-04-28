@@ -309,7 +309,7 @@ class PulseBlockEcg(TimetickedMessage):
     time: int
     num_samples: int
     ecgs: list[int]
-    len = int(0)
+    pkg_length: int
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
@@ -317,15 +317,20 @@ class PulseBlockEcg(TimetickedMessage):
         return 13
 
     def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
-        return self.len
+        return self.pkg_length
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockEcg":
+    def decode(self, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockEcg":
         if len(data) < 13:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
         packed_ecgs = data[0]
+        pkg_length = 1 + 8 + 4 + (packed_ecgs * 2)
+        if len(data) < pkg_length:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
         (time,) = struct.unpack("<Q", data[1:9])
         ecgs = []
         ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
@@ -341,8 +346,8 @@ class PulseBlockEcg(TimetickedMessage):
             time=time,
             num_samples=packed_ecgs+1,
             ecgs=ecgs,
+            pkg_length=pkg_length,
         )
-        msg.len = 1 + 8 + 4 + (packed_ecgs * 2)
         return msg
 
     def encode(self) -> bytes:
@@ -355,7 +360,7 @@ class PulseBlockPpg(TimetickedMessage):
     time: int
     num_samples: int
     ppgs: list[int]
-    len = int(0)
+    pkg_length: int
 
     @classmethod
     def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
@@ -363,15 +368,20 @@ class PulseBlockPpg(TimetickedMessage):
         return 13
 
     def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
-        return self.len
+        return self.pkg_length
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockPpg":
+    def decode(self, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockPpg":
         if len(data) < 13:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
             )
         packed_ppgs = data[0]
+        pkg_length = 1 + 8 + 4 + (packed_ppgs * 2)
+        if len(data) < pkg_length:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
+            )
         (time,) = struct.unpack("<Q", data[1:9])
         ppgs = []
         ref = int.from_bytes( data[9:13], byteorder="little", signed=True )
@@ -387,8 +397,8 @@ class PulseBlockPpg(TimetickedMessage):
             time=time,
             num_samples=packed_ppgs+1,
             ppgs=ppgs,
+            pkg_length=pkg_length,
         )
-        msg.len = 1 + 8 + 4 + (packed_ppgs * 2)
         return msg
 
     def encode(self) -> bytes:
