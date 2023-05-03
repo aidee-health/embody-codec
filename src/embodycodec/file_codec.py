@@ -302,8 +302,6 @@ class PulseRawList(TimetickedMessage):
         return fmt, no_of_ecgs, no_of_ppgs
 
 
-
-
 @dataclass
 class PulseBlockEcg(TimetickedMessage):
     time: int
@@ -321,7 +319,9 @@ class PulseBlockEcg(TimetickedMessage):
         return self.pkg_length
 
     @classmethod
-    def decode(self, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockEcg":
+    def decode(
+        cls, data: bytes, version: Optional[tuple[int, int, int]] = None
+    ) -> "PulseBlockEcg":
         if len(data) < 14:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
@@ -335,7 +335,7 @@ class PulseBlockEcg(TimetickedMessage):
             )
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
-        ref = int.from_bytes( data[10:14], byteorder="little", signed=True )
+        ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
         pos = 14
         for _ in range(packed_ecgs):
@@ -347,7 +347,7 @@ class PulseBlockEcg(TimetickedMessage):
         msg = PulseBlockEcg(
             time=time,
             channel=channel,
-            num_samples=packed_ecgs+1,
+            num_samples=packed_ecgs + 1,
             samples=samples,
             pkg_length=pkg_length,
         )
@@ -375,7 +375,9 @@ class PulseBlockPpg(TimetickedMessage):
         return self.pkg_length
 
     @classmethod
-    def decode(self, data: bytes, version: Optional[tuple[int, int, int]] = None) -> "PulseBlockPpg":
+    def decode(
+        cls, data: bytes, version: Optional[tuple[int, int, int]] = None
+    ) -> "PulseBlockPpg":
         if len(data) < 13:
             raise BufferError(
                 f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
@@ -389,7 +391,7 @@ class PulseBlockPpg(TimetickedMessage):
             )
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
-        ref = int.from_bytes( data[10:14], byteorder="little", signed=True )
+        ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
         pos = 14
         for _ in range(packed_ppgs):
@@ -401,7 +403,7 @@ class PulseBlockPpg(TimetickedMessage):
         msg = PulseBlockPpg(
             time=time,
             channel=channel,
-            num_samples=packed_ppgs+1,
+            num_samples=packed_ppgs + 1,
             samples=samples,
             pkg_length=pkg_length,
         )
