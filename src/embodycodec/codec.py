@@ -576,32 +576,32 @@ class ExecuteCommand(Message):
 
         if self.command_id == t.ExecuteCommandType.ON_BODY.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.USB_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FLASH_FILL_GRADE.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.BATTERY_LEVEL.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0])
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
