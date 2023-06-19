@@ -130,3 +130,7 @@ dmypy.json
 
 #Idea / Pycharm project files
 .idea/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
