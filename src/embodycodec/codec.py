@@ -544,6 +544,10 @@ class ExecuteCommand(Message):
         0x01: "Reset device",
         0x02: "Reboot device",
         0x03: "Press button <press count (1 byte)><press duration in ms (2 bytes)>",
+        0x04: "On Body: < Normal | Force On | Force Off (1 byte)>",
+        0x05: "USB Connection: < Normal | Force On | Force Off (1 byte)>",
+        0x06: "Flash fill grade: < Normal | Fill grade (1 byte)>",
+        0x07: "Battery level: < Normal | Force level (1 byte)>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -569,6 +573,26 @@ class ExecuteCommand(Message):
         if self.command_id == t.ExecuteCommandType.PRESS_BUTTON.value:
             attribute_part = struct.pack(">B", self.command_id)
             return attribute_part + self.value
+
+        if self.command_id == t.ExecuteCommandType.ON_BODY.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.USB_CONNECTION.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.FLASH_FILL_GRADE.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.BATTERY_LEVEL.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
