@@ -544,10 +544,11 @@ class ExecuteCommand(Message):
         0x01: "Reset device",
         0x02: "Reboot device",
         0x03: "Press button <press count (1 byte)><press duration in ms (2 bytes)>",
-        0x04: "On Body: < Normal | Force On | Force Off (1 byte)>",
-        0x05: "USB Connection: < Normal | Force On | Force Off (1 byte)>",
-        0x06: "Flash fill grade: < Normal | Fill grade (1 byte)>",
-        0x07: "Battery level: < Normal | Force level (1 byte)>",
+        0x04: "On Body: <Force Off (0) | Force On (1) | Force Disable (255) (1 byte)>",
+        0x05: "USB Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
+        0x06: "BLE Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
+        0x07: "Flash level: <Force value | Force Disable (0xFF) (1 byte)>",
+        0x08: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -574,40 +575,45 @@ class ExecuteCommand(Message):
             attribute_part = struct.pack(">B", self.command_id)
             return attribute_part + self.value
 
-        if self.command_id == t.ExecuteCommandType.ON_BODY.value:
+        if self.command_id == t.ExecuteCommandType.FORCE_ON_BODY.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        if self.command_id == t.ExecuteCommandType.USB_CONNECTION.value:
+        if self.command_id == t.ExecuteCommandType.FORCE_USB_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        if self.command_id == t.ExecuteCommandType.FLASH_FILL_GRADE.value:
+        if self.command_id == t.ExecuteCommandType.FORCE_BLE_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
-        if self.command_id == t.ExecuteCommandType.BATTERY_LEVEL.value:
+        if self.command_id == t.ExecuteCommandType.FORCE_FLASH_LEVEL.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.FORCE_BATTERY_LEVEL.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0])
+            value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
             attribute_part = struct.pack(">B", self.command_id)
             address_part = struct.pack(">B", self.value[0])
-            value_part = struct.pack(">I", self.value[1])
+            value_part = struct.pack(">I", self.value)
             return attribute_part + address_part + value_part
 
         attribute_part = struct.pack(">B", self.command_id)
