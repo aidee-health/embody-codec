@@ -675,6 +675,16 @@ def test_execute_press_button_command() -> None:
     assert decoded.length == 9
 
 
+# def test_execute_on_body_command() -> None:
+#     response = codec.ExecuteCommand(0x04, b"\x00")
+#     encoded = response.encode()
+#     print(encoded.hex())
+#     assert encoded == bytes.fromhex("5100070400e73b")
+#     decoded = codec.decode(encoded)
+#     assert isinstance(decoded, codec.ExecuteCommand)
+#     assert decoded.length == 7
+
+
 def test_execute_command_response() -> None:
     response = codec.ExecuteCommandResponse(1, b"")
     encoded = response.encode()
