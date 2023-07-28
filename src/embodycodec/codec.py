@@ -547,8 +547,7 @@ class ExecuteCommand(Message):
         0x04: "On Body: <Force Off (0) | Force On (1) | Force Disable (255) (1 byte)>",
         0x05: "USB Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x06: "BLE Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
-        0x07: "Flash level: <Force value | Force Disable (0xFF) (1 byte)>",
-        0x08: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
+        0x07: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -586,11 +585,6 @@ class ExecuteCommand(Message):
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_BLE_CONNECTION.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.FORCE_FLASH_LEVEL.value:
             attribute_part = struct.pack(">B", self.command_id)
             value_part = struct.pack(">B", self.value)
             return attribute_part + value_part
