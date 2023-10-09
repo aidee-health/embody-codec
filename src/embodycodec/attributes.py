@@ -229,6 +229,13 @@ class DisableAutoRecAttribute(Attribute):
 
 
 @dataclass
+class OnBodyDetectAttribute(Attribute):
+    struct_format = ">?"
+    attribute_id = 0x76
+    value: bool
+
+
+@dataclass
 class BatteryLevelAttribute(Attribute):
     struct_format = ">B"
     attribute_id = 0xA1
@@ -511,4 +518,6 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
         return BatteryDiagnosticsAttribute.decode(data)
     if attribute_id == LedsAttribute.attribute_id:
         return LedsAttribute.decode(data)
+    if attribute_id == OnBodyDetectAttribute.attribute_id:
+        return OnBodyDetectAttribute.decode(data)
     raise LookupError(f"Unknown attribute type {attribute_id}")

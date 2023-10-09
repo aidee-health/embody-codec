@@ -343,6 +343,17 @@ def test_encode_decode_flashinfo() -> None:
     )
 
 
+def test_encode_decode_on_body_detect() -> None:
+    decoded = do_test_encode_decode_attribute(
+        attributes.OnBodyDetectAttribute(value=False), b"\x00"
+    )
+    assert decoded.value is False
+    decoded = do_test_encode_decode_attribute(
+        attributes.OnBodyDetectAttribute(value=True), b"\x01"
+    )
+    assert decoded.value is True
+
+
 def do_test_encode_decode_attribute(
     attribute: attributes.Attribute, expected_encoded: bytes
 ):
