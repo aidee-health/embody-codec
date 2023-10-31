@@ -65,3 +65,5 @@ This project was originally generated from [@cjolowicz]'s [Hypermodern Python Co
 
 [license]: https://github.com/aidee-health/embody-codec/blob/main/LICENSE
 [contributor guide]: https://github.com/aidee-health/embody-codec/blob/main/CONTRIBUTING.md
+
+<!-- done github-only -->
