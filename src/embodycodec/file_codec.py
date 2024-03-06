@@ -426,7 +426,9 @@ class BatteryDiagnostics(TimetickedMessage):
     full_cap: int
     # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
     rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
-    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    repsoc: (
+        int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    )
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
     @classmethod
