@@ -154,11 +154,7 @@ class PulseRawList(ComplexType):
         bytes_per_ecg_and_ppg = (
             1
             if self.format == 0
-            else 2
-            if self.format == 1
-            else 3
-            if self.format == 2
-            else 4
+            else 2 if self.format == 1 else 3 if self.format == 2 else 4
         )
         payload = struct.pack("<H", self.tick)
         payload += struct.pack("<B", format_and_length)
@@ -272,7 +268,9 @@ class BatteryDiagnostics(ComplexType):
     full_cap: int
     # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
     rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
-    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    repsoc: (
+        int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
+    )
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
     def to_str(self):
