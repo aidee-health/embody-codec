@@ -99,7 +99,11 @@ class SerialNoAttribute(Attribute):
     value: int
 
     def formatted_value(self) -> Optional[str]:
-        return self.value.to_bytes(8, "big", signed=True).hex() if self.value else None
+        return (
+            self.value.to_bytes(8, "big", signed=True).hex().upper()
+            if self.value
+            else None
+        )
 
 
 @dataclass

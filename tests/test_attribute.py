@@ -13,7 +13,7 @@ def test_encode_decode_serial_no() -> None:
 
 def test_serial_no_attribute_format_value() -> None:
     assert (
-        attributes.SerialNoAttribute(12345678).formatted_value() == "0000000000bc614e"
+        attributes.SerialNoAttribute(12345678).formatted_value() == "0000000000BC614E"
     )
 
 
