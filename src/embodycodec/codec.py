@@ -649,89 +649,95 @@ def decode(data: bytes) -> Message:
     """
 
     (message_type, length,) = struct.unpack(">BH", data[0:3])
+    (crc,) = struct.unpack(">H", data[length-2:length])
     if len(data) < length:
         raise BufferError(
             f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes"
         ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded
+    calculated_crc = crc16(data[0:length-2])
+    if crc != calculated_crc:
+        raise CrcError(
+            f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
+        ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded    
     try:
         if message_type == Heartbeat.msg_type:
-            return Heartbeat.decode(data[1:])
+            return Heartbeat.decode(data[1:length])
         if message_type == HeartbeatResponse.msg_type:
-            return HeartbeatResponse.decode(data[1:])
+            return HeartbeatResponse.decode(data[1:length])
         if message_type == NackResponse.msg_type:
-            return NackResponse.decode(data[1:])
+            return NackResponse.decode(data[1:length])
         if message_type == SetAttribute.msg_type:
-            return SetAttribute.decode(data[1:])
+            return SetAttribute.decode(data[1:length])
         if message_type == SetAttributeResponse.msg_type:
-            return SetAttributeResponse.decode(data[1:])
+            return SetAttributeResponse.decode(data[1:length])
         if message_type == GetAttribute.msg_type:
-            return GetAttribute.decode(data[1:])
+            return GetAttribute.decode(data[1:length])
         if message_type == GetAttributeResponse.msg_type:
-            return GetAttributeResponse.decode(data[1:])
+            return GetAttributeResponse.decode(data[1:length])
         if message_type == ResetAttribute.msg_type:
-            return ResetAttribute.decode(data[1:])
+            return ResetAttribute.decode(data[1:length])
         if message_type == ResetAttributeResponse.msg_type:
-            return ResetAttributeResponse.decode(data[1:])
+            return ResetAttributeResponse.decode(data[1:length])
         if message_type == ConfigureReporting.msg_type:
-            return ConfigureReporting.decode(data[1:])
+            return ConfigureReporting.decode(data[1:length])
         if message_type == ConfigureReportingResponse.msg_type:
-            return ConfigureReportingResponse.decode(data[1:])
+            return ConfigureReportingResponse.decode(data[1:length])
         if message_type == ResetReporting.msg_type:
-            return ResetReporting.decode(data[1:])
+            return ResetReporting.decode(data[1:length])
         if message_type == ResetReportingResponse.msg_type:
-            return ResetReportingResponse.decode(data[1:])
+            return ResetReportingResponse.decode(data[1:length])
         if message_type == PeriodicRecording.msg_type:
-            return PeriodicRecording.decode(data[1:])
+            return PeriodicRecording.decode(data[1:length])
         if message_type == PeriodicRecordingResponse.msg_type:
-            return PeriodicRecordingResponse.decode(data[1:])
+            return PeriodicRecordingResponse.decode(data[1:length])
         if message_type == AttributeChanged.msg_type:
-            return AttributeChanged.decode(data[1:])
+            return AttributeChanged.decode(data[1:length])
         if message_type == AttributeChangedResponse.msg_type:
-            return AttributeChangedResponse.decode(data[1:])
+            return AttributeChangedResponse.decode(data[1:length])
         if message_type == RawPulseChanged.msg_type:
-            return RawPulseChanged.decode(data[1:])
+            return RawPulseChanged.decode(data[1:length])
         if message_type == RawPulseChangedResponse.msg_type:
-            return RawPulseChangedResponse.decode(data[1:])
+            return RawPulseChangedResponse.decode(data[1:length])
         if message_type == RawPulseListChanged.msg_type:
-            return RawPulseListChanged.decode(data[1:])
+            return RawPulseListChanged.decode(data[1:length])
         if message_type == RawPulseListChangedResponse.msg_type:
-            return RawPulseListChangedResponse.decode(data[1:])
+            return RawPulseListChangedResponse.decode(data[1:length])
         if message_type == Alarm.msg_type:
-            return Alarm.decode(data[1:])
+            return Alarm.decode(data[1:length])
         if message_type == AlarmResponse.msg_type:
-            return AlarmResponse.decode(data[1:])
+            return AlarmResponse.decode(data[1:length])
         if message_type == ListFiles.msg_type:
-            return ListFiles.decode(data[1:])
+            return ListFiles.decode(data[1:length])
         if message_type == ListFilesResponse.msg_type:
-            return ListFilesResponse.decode(data[1:])
+            return ListFilesResponse.decode(data[1:length])
         if message_type == GetFile.msg_type:
-            return GetFile.decode(data[1:])
+            return GetFile.decode(data[1:length])
         if message_type == GetFileResponse.msg_type:
-            return GetFileResponse.decode(data[1:])
+            return GetFileResponse.decode(data[1:length])
         if message_type == SendFile.msg_type:
-            return SendFile.decode(data[1:])
+            return SendFile.decode(data[1:length])
         if message_type == SendFileResponse.msg_type:
-            return SendFileResponse.decode(data[1:])
+            return SendFileResponse.decode(data[1:length])
         if message_type == DeleteFile.msg_type:
-            return DeleteFile.decode(data[1:])
+            return DeleteFile.decode(data[1:length])
         if message_type == DeleteFileResponse.msg_type:
-            return DeleteFileResponse.decode(data[1:])
+            return DeleteFileResponse.decode(data[1:length])
         if message_type == GetFileUart.msg_type:
-            return GetFileUart.decode(data[1:])
+            return GetFileUart.decode(data[1:length])
         if message_type == GetFileUartResponse.msg_type:
-            return GetFileUartResponse.decode(data[1:])
+            return GetFileUartResponse.decode(data[1:length])
         if message_type == ReformatDisk.msg_type:
-            return ReformatDisk.decode(data[1:])
+            return ReformatDisk.decode(data[1:length])
         if message_type == ReformatDiskResponse.msg_type:
-            return ReformatDiskResponse.decode(data[1:])
+            return ReformatDiskResponse.decode(data[1:length])
         if message_type == ExecuteCommand.msg_type:
-            return ExecuteCommand.decode(data[1:])
+            return ExecuteCommand.decode(data[1:length])
         if message_type == ExecuteCommandResponse.msg_type:
-            return ExecuteCommandResponse.decode(data[1:])
+            return ExecuteCommandResponse.decode(data[1:length])
         if message_type == DeleteAllFiles.msg_type:
-            return DeleteAllFiles.decode(data[1:])
+            return DeleteAllFiles.decode(data[1:length])
         if message_type == DeleteAllFilesResponse.msg_type:
-            return DeleteAllFilesResponse.decode(data[1:])
+            return DeleteAllFilesResponse.decode(data[1:length])
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
         raise DecodeError(
