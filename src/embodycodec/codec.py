@@ -648,12 +648,11 @@ def decode(data: bytes) -> Message:
     raises LookupError if unknown message type.
     """
 
-    message_type = data[0]
-    (length,) = struct.unpack(">H", data[1:3])
+    (message_type, length,) = struct.unpack(">BH", data[0:3])
     if len(data) < length:
         raise BufferError(
             f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes"
-        )
+        ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded
     try:
         if message_type == Heartbeat.msg_type:
             return Heartbeat.decode(data[1:])
