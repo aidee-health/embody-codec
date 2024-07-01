@@ -649,11 +649,11 @@ def decode(data: bytes) -> Message:
     """
 
     (message_type, length,) = struct.unpack(">BH", data[0:3])
-    (crc,) = struct.unpack(">H", data[length-2:length])
     if len(data) < length:
         raise BufferError(
             f"Buffer too short for message: Received {len(data)} bytes, expected {length} bytes"
         ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded
+    (crc,) = struct.unpack(">H", data[length-2:length])
     calculated_crc = crc16(data[0:length-2])
     if crc != calculated_crc:
         raise CrcError(
