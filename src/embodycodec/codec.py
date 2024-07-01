@@ -658,86 +658,87 @@ def decode(data: bytes) -> Message:
     if crc != calculated_crc:
         raise CrcError(
             f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
-        ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded    
+        ) # Note: This is not technically an error as more data may arrive allowing the message to be decoded
+    trimmed_data = data[3:length-2] # Prepare the data by trimming off the message type, length and crc field
     try:
         if message_type == Heartbeat.msg_type:
-            return Heartbeat.decode(data[1:length])
+            return Heartbeat.decode(trimmed_data)
         if message_type == HeartbeatResponse.msg_type:
-            return HeartbeatResponse.decode(data[1:length])
+            return HeartbeatResponse.decode(trimmed_data)
         if message_type == NackResponse.msg_type:
-            return NackResponse.decode(data[1:length])
+            return NackResponse.decode(trimmed_data)
         if message_type == SetAttribute.msg_type:
-            return SetAttribute.decode(data[1:length])
+            return SetAttribute.decode(trimmed_data)
         if message_type == SetAttributeResponse.msg_type:
-            return SetAttributeResponse.decode(data[1:length])
+            return SetAttributeResponse.decode(trimmed_data)
         if message_type == GetAttribute.msg_type:
-            return GetAttribute.decode(data[1:length])
+            return GetAttribute.decode(trimmed_data)
         if message_type == GetAttributeResponse.msg_type:
-            return GetAttributeResponse.decode(data[1:length])
+            return GetAttributeResponse.decode(trimmed_data)
         if message_type == ResetAttribute.msg_type:
-            return ResetAttribute.decode(data[1:length])
+            return ResetAttribute.decode(trimmed_data)
         if message_type == ResetAttributeResponse.msg_type:
-            return ResetAttributeResponse.decode(data[1:length])
+            return ResetAttributeResponse.decode(trimmed_data)
         if message_type == ConfigureReporting.msg_type:
-            return ConfigureReporting.decode(data[1:length])
+            return ConfigureReporting.decode(trimmed_data)
         if message_type == ConfigureReportingResponse.msg_type:
-            return ConfigureReportingResponse.decode(data[1:length])
+            return ConfigureReportingResponse.decode(trimmed_data)
         if message_type == ResetReporting.msg_type:
-            return ResetReporting.decode(data[1:length])
+            return ResetReporting.decode(trimmed_data)
         if message_type == ResetReportingResponse.msg_type:
-            return ResetReportingResponse.decode(data[1:length])
+            return ResetReportingResponse.decode(trimmed_data)
         if message_type == PeriodicRecording.msg_type:
-            return PeriodicRecording.decode(data[1:length])
+            return PeriodicRecording.decode(trimmed_data)
         if message_type == PeriodicRecordingResponse.msg_type:
-            return PeriodicRecordingResponse.decode(data[1:length])
+            return PeriodicRecordingResponse.decode(trimmed_data)
         if message_type == AttributeChanged.msg_type:
-            return AttributeChanged.decode(data[1:length])
+            return AttributeChanged.decode(trimmed_data)
         if message_type == AttributeChangedResponse.msg_type:
-            return AttributeChangedResponse.decode(data[1:length])
+            return AttributeChangedResponse.decode(trimmed_data)
         if message_type == RawPulseChanged.msg_type:
-            return RawPulseChanged.decode(data[1:length])
+            return RawPulseChanged.decode(trimmed_data)
         if message_type == RawPulseChangedResponse.msg_type:
-            return RawPulseChangedResponse.decode(data[1:length])
+            return RawPulseChangedResponse.decode(trimmed_data)
         if message_type == RawPulseListChanged.msg_type:
-            return RawPulseListChanged.decode(data[1:length])
+            return RawPulseListChanged.decode(trimmed_data)
         if message_type == RawPulseListChangedResponse.msg_type:
-            return RawPulseListChangedResponse.decode(data[1:length])
+            return RawPulseListChangedResponse.decode(trimmed_data)
         if message_type == Alarm.msg_type:
-            return Alarm.decode(data[1:length])
+            return Alarm.decode(trimmed_data)
         if message_type == AlarmResponse.msg_type:
-            return AlarmResponse.decode(data[1:length])
+            return AlarmResponse.decode(trimmed_data)
         if message_type == ListFiles.msg_type:
-            return ListFiles.decode(data[1:length])
+            return ListFiles.decode(trimmed_data)
         if message_type == ListFilesResponse.msg_type:
-            return ListFilesResponse.decode(data[1:length])
+            return ListFilesResponse.decode(trimmed_data)
         if message_type == GetFile.msg_type:
-            return GetFile.decode(data[1:length])
+            return GetFile.decode(trimmed_data)
         if message_type == GetFileResponse.msg_type:
-            return GetFileResponse.decode(data[1:length])
+            return GetFileResponse.decode(trimmed_data)
         if message_type == SendFile.msg_type:
-            return SendFile.decode(data[1:length])
+            return SendFile.decode(trimmed_data)
         if message_type == SendFileResponse.msg_type:
-            return SendFileResponse.decode(data[1:length])
+            return SendFileResponse.decode(trimmed_data)
         if message_type == DeleteFile.msg_type:
-            return DeleteFile.decode(data[1:length])
+            return DeleteFile.decode(trimmed_data)
         if message_type == DeleteFileResponse.msg_type:
-            return DeleteFileResponse.decode(data[1:length])
+            return DeleteFileResponse.decode(trimmed_data)
         if message_type == GetFileUart.msg_type:
-            return GetFileUart.decode(data[1:length])
+            return GetFileUart.decode(trimmed_data)
         if message_type == GetFileUartResponse.msg_type:
-            return GetFileUartResponse.decode(data[1:length])
+            return GetFileUartResponse.decode(trimmed_data)
         if message_type == ReformatDisk.msg_type:
-            return ReformatDisk.decode(data[1:length])
+            return ReformatDisk.decode(trimmed_data)
         if message_type == ReformatDiskResponse.msg_type:
-            return ReformatDiskResponse.decode(data[1:length])
+            return ReformatDiskResponse.decode(trimmed_data)
         if message_type == ExecuteCommand.msg_type:
-            return ExecuteCommand.decode(data[1:length])
+            return ExecuteCommand.decode(trimmed_data)
         if message_type == ExecuteCommandResponse.msg_type:
-            return ExecuteCommandResponse.decode(data[1:length])
+            return ExecuteCommandResponse.decode(trimmed_data)
         if message_type == DeleteAllFiles.msg_type:
-            return DeleteAllFiles.decode(data[1:length])
+            return DeleteAllFiles.decode(trimmed_data)
         if message_type == DeleteAllFilesResponse.msg_type:
-            return DeleteAllFilesResponse.decode(data[1:length])
+            return DeleteAllFilesResponse.decode(trimmed_data)
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
         raise DecodeError(
