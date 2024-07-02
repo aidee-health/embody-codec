@@ -720,7 +720,7 @@ def test_get_attribute_response_afe_settings_all() -> None:
 def test_get_attribute_response_battery_diagnostics() -> None:
     msg = codec.decode(
         bytes.fromhex(
-            "92002ABB000000def8e22fec000000180b35010000000200000003000400050006000700080009000A0069fa"
+            "92002CBB000000def8e22fec000000180b35010000000200000003000400050006000700080009000A00ED2C"
         )
     )
     assert isinstance(msg, codec.GetAttributeResponse)
