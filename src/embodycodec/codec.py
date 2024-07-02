@@ -251,10 +251,10 @@ class ConfigureReportingResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ConfigureReportingResponse":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = ConfigureReportingResponse()
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
 
@@ -277,13 +277,13 @@ class PeriodicRecording(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "PeriodicRecording":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         recording = t.Recording.decode(
             data[pos + 0 : pos + t.Recording.default_length()]
         )
         msg = PeriodicRecording(recording=recording)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -304,15 +304,15 @@ class AttributeChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "AttributeChanged":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
         value = a.decode_attribute(attribute_id, data[pos + 10 :])
         msg = AttributeChanged(
             changed_at=changed_at, attribute_id=attribute_id, value=value
         )
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -335,11 +335,10 @@ class RawPulseChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "RawPulseChanged":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips type (1B) and length field (2B))
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         header_crc = 7  # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
         (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
-        (length,) = struct.unpack(">H", data[1:pos])
         # Determine if payload contains 1 or 3 PPGs
         if length - header_crc == t.PulseRawAll.default_length():
             value = t.PulseRawAll.decode(
@@ -370,12 +369,12 @@ class RawPulseListChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "RawPulseListChanged":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field (2B))
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
         value = a.PulseRawListAttribute.decode(data[pos + 1 :])
         msg = RawPulseListChanged(attribute_id=attribute_id, value=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -421,13 +420,13 @@ class ListFilesResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ListFilesResponse":
-        if not cls.__check_crc(data): return None
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         # ListFiles length
         msg = ListFilesResponse(files=[])
-        (msg.length,) = struct.unpack(">H", data[0:2])
+        (msg.length,) = length
 
         if msg.length > 5:
-            pos = 3
             while pos + t.FileWithLength.default_length() <= msg.length - 1:
                 msg.files.append(
                     t.FileWithLength.decode(
@@ -453,11 +452,11 @@ class GetFile(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "GetFile":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = GetFile(file=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -479,8 +478,8 @@ class SendFile(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "SendFile":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        length = cls._check_crc_and_get_length(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         file_name = t.File.decode(data[pos:])
         (index,) = struct.unpack(
             ">H",
@@ -494,7 +493,7 @@ class SendFile(Message):
         msg = SendFile(
             file_name=file_name, index=index, total_parts=total_parts, payload=payload
         )
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        (msg.length,) = length
         return msg
 
     def _encode_body(self) -> bytes:
