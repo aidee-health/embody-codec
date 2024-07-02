@@ -88,20 +88,20 @@ class Message(ABC):
     def encode(self) -> bytes:
         """Encode a message object to bytes"""
         body = self._encode_body()
-        header = _encode_header(body)
+        header = self._encode_header(body)
         header_and_body = header + body
-        return header_and_body + _encode_crc(header_and_body)
+        return header_and_body + self._encode_crc(header_and_body)
 
     def _encode_body(self) -> bytes:
         return struct.pack(self.struct_format, *astuple(self))
 
-    def _encode_crc(header_and_body: bytes) -> bytes:
+    def _encode_crc(self, header_and_body: bytes) -> bytes:
         crc_calculated = crc16(header_and_body)
         crc = struct.pack(">H", crc_calculated)
         return crc
 
-    def _encode_header(body: bytes) -> bytes:
-        return struct.pack(struct_hdr_format, self.msg_type, len(body) + hdr_len + crc_len)
+    def _encode_header(self, body: bytes) -> bytes:
+        return struct.pack(self.struct_hdr_format, self.msg_type, len(body) + self.hdr_len + self.crc_len)
 
 
 @dataclass
