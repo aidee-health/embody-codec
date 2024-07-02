@@ -485,7 +485,7 @@ class FileDataChunk(Message):
             msg.fileref,
             msg.offset,
         ) = struct.unpack(cls.struct_format, data[pos : pos + 1 + 4])
-        cls.file_data = bytes(data[pos + 1 + 4 : length - cls.crc_len])
+        msg.file_data = bytes(data[pos + 1 + 4 : length - cls.crc_len])
         msg.crc = crc
         msg.length = length
         return msg
