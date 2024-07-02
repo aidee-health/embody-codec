@@ -19,8 +19,8 @@ from typing import Union
 from embodycodec import attributes as a
 from embodycodec import types as t
 from embodycodec.crc import crc16
-from embodycodec.exceptions import DecodeError
 from embodycodec.exceptions import CrcError
+from embodycodec.exceptions import DecodeError
 
 
 T = TypeVar("T", bound="Message")
@@ -32,7 +32,7 @@ class Message(ABC):
 
     hdr_len = 3
     """Header length to avoid checking every time"""
-    
+
     crc_len = 2
     """CRC length to avoid magic numbers"""
 
@@ -59,15 +59,18 @@ class Message(ABC):
 
     @classmethod
     def _check_crc_and_get_metadata(cls, data: bytes) -> tuple[int, int]:
-        (data_type, data_length,) = struct.unpack(cls.struct_hdr_format, data[0:cls.hdr_len])
+        (
+            data_type,
+            data_length,
+        ) = struct.unpack(cls.struct_hdr_format, data[0 : cls.hdr_len])
         if len(data) < data_length:
             # Note: This is not technically an error as more data may arrive allowing the message to be decoded,
             # but raised as error to split it from the resulting length found in the process of checking crc
             raise BufferError(
                 f"Buffer too short for message: Received {len(data)} bytes, expected {data_length} bytes"
             )
-        (crc,) = struct.unpack(">H", data[data_length-2:data_length])
-        calculated_crc = crc16(data[0:data_length-2])
+        (crc,) = struct.unpack(">H", data[data_length - 2 : data_length])
+        calculated_crc = crc16(data[0 : data_length - 2])
         if crc != calculated_crc:
             raise CrcError(
                 f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
@@ -103,7 +106,11 @@ class Message(ABC):
         return crc
 
     def _encode_header(self, body: bytes) -> bytes:
-        return struct.pack(self.struct_hdr_format, self.msg_type, len(body) + self.hdr_len + self.crc_len)
+        return struct.pack(
+            self.struct_hdr_format,
+            self.msg_type,
+            len(body) + self.hdr_len + self.crc_len,
+        )
 
 
 @dataclass
@@ -150,7 +157,10 @@ class SetAttribute(Message):
     def decode(cls, data: bytes) -> "SetAttribute":
         crc, length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
-        (attribute_id,attrib_len,) = struct.unpack(">BB", data[pos : pos + 2])
+        (
+            attribute_id,
+            attrib_len,
+        ) = struct.unpack(">BB", data[pos : pos + 2])
         value = a.decode_attribute(attribute_id, data[pos + 2 : pos + 2 + attrib_len])
         msg = SetAttribute(attribute_id=attribute_id, value=value)
         msg.crc = crc
@@ -461,7 +471,8 @@ class ListFilesResponse(Message):
 class FileDataChunk(Message):
     struct_format = ">BI"
     msg_type = 0xCA
-    fileref: int = 0 # Used to identify to the host which file the chunk belongs to. Taken from the send command as supplied by host
+    fileref: int = 0
+    """Used to identify to the host which file the chunk belongs to. Taken from the send command as supplied by host"""
     offset: int = 0
     file_data: bytes = b""
 
@@ -471,8 +482,11 @@ class FileDataChunk(Message):
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = FileDataChunk()
         # fileref and offset
-        (msg.fileref, msg.offset ) = struct.unpack(cls.struct_format, data[pos:pos+1+4])
-        cls.file_data = bytes(data[pos+1+4:length-cls.crc_len])
+        (
+            msg.fileref,
+            msg.offset,
+        ) = struct.unpack(cls.struct_format, data[pos : pos + 1 + 4])
+        cls.file_data = bytes(data[pos + 1 + 4 : length - cls.crc_len])
         msg.crc = crc
         msg.length = length
         return msg
@@ -734,8 +748,12 @@ def decode(data: bytes) -> Message:
     raises LookupError if unknown message type.
     """
 
-    (message_type, length,) = struct.unpack(">BH", data[0:3])
-    trimmed_data = data[0:length] # Prepare the data by trimming off any additional data not part of packet
+    (
+        message_type,
+        length,
+    ) = struct.unpack(">BH", data[0:3])
+    # Prepare the data by trimming off any additional data not part of packet
+    trimmed_data = data[0:length]
     try:
         if message_type == Heartbeat.msg_type:
             return Heartbeat.decode(trimmed_data)
