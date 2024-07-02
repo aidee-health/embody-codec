@@ -76,7 +76,7 @@ class Message(ABC):
     def decode(cls: type[T], data: bytes) -> T:
         """Decode bytes into message object"""
         length = cls._check_crc_and_get_length(data)
-        pos = hdr_len  # offset to start of body (skips msg_type and length field)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = cls(
             *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
         )
