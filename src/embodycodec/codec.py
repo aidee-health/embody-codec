@@ -268,7 +268,6 @@ class ConfigureReportingResponse(Message):
     @classmethod
     def decode(cls, data: bytes) -> "ConfigureReportingResponse":
         crc, length = cls._check_crc_and_get_metadata(data)
-        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = ConfigureReportingResponse()
         msg.crc = crc
         msg.length = length
