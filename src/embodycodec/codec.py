@@ -57,7 +57,7 @@ class Message(ABC):
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def _check_crc_and_get_length(cls, data: bytes) -> int:
+    def _check_crc_and_get_metadata(cls, data: bytes) -> tuple[int,int]:
         (data_type, data_length,) = struct.unpack(cls.struct_hdr_format, data[0:cls.hdr_len])
         if len(data) < data_length:
             raise BufferError(
@@ -70,16 +70,17 @@ class Message(ABC):
             raise CrcError(
                 f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
             )
-        return data_length
+        return crc, data_length
 
     @classmethod
     def decode(cls: type[T], data: bytes) -> T:
         """Decode bytes into message object"""
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = cls(
             *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
         )
+        msg.crc = crc
         msg.length = length
         return msg
 
@@ -145,11 +146,12 @@ class SetAttribute(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "SetAttribute":
-        length = cls._check_crc_and_get_length(data)
+        crc, length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,attrib_len,) = struct.unpack(">BB", data[pos : pos + 2])
         value = a.decode_attribute(attribute_id, data[pos + 2 : pos + 2 + attrib_len])
         msg = SetAttribute(attribute_id=attribute_id, value=value)
+        msg.crc = crc
         msg.length = length
         return msg
 
@@ -182,7 +184,7 @@ class GetAttributeResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "GetAttributeResponse":
-        data_length = cls._check_crc_and_get_length(data)
+        crc, data_length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         (changed_at,) = struct.unpack(">Q", data[pos + 1 : pos + 9])
@@ -198,7 +200,8 @@ class GetAttributeResponse(Message):
             reporting=reporting,
             value=value,
         )
-        (msg.length,) = data_length
+        msg.crc = crc
+        msg.length = data_length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -229,14 +232,15 @@ class ConfigureReporting(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ConfigureReporting":
-        length = cls._check_crc_and_get_length(data)
+        crc, length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         reporting = t.Reporting.decode(
             data[pos + 1 : pos + 1 + t.Reporting.default_length()]
         )
         msg = ConfigureReporting(attribute_id=attribute_id, reporting=reporting)
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -251,10 +255,11 @@ class ConfigureReportingResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ConfigureReportingResponse":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = ConfigureReportingResponse()
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
 
@@ -277,13 +282,14 @@ class PeriodicRecording(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "PeriodicRecording":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         recording = t.Recording.decode(
             data[pos + 0 : pos + t.Recording.default_length()]
         )
         msg = PeriodicRecording(recording=recording)
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -304,7 +310,7 @@ class AttributeChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "AttributeChanged":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
@@ -312,7 +318,8 @@ class AttributeChanged(Message):
         msg = AttributeChanged(
             changed_at=changed_at, attribute_id=attribute_id, value=value
         )
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -335,7 +342,7 @@ class RawPulseChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "RawPulseChanged":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         header_crc = 7  # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
         (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
@@ -347,6 +354,7 @@ class RawPulseChanged(Message):
         else:
             value = t.PulseRaw.decode(data[pos + 2 :])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
+        msg.crc = crc
         msg.length = length
         return msg
 
@@ -369,12 +377,13 @@ class RawPulseListChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "RawPulseListChanged":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
         value = a.PulseRawListAttribute.decode(data[pos + 1 :])
         msg = RawPulseListChanged(attribute_id=attribute_id, value=value)
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -420,11 +429,12 @@ class ListFilesResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ListFilesResponse":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         # ListFiles length
         msg = ListFilesResponse(files=[])
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
 
         if msg.length > 5:
             while pos + t.FileWithLength.default_length() <= msg.length - 1:
@@ -452,11 +462,12 @@ class GetFile(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "GetFile":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = GetFile(file=value)
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -478,7 +489,7 @@ class SendFile(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "SendFile":
-        length = cls._check_crc_and_get_length(data)
+        crc,length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         file_name = t.File.decode(data[pos:])
         (index,) = struct.unpack(
@@ -493,7 +504,8 @@ class SendFile(Message):
         msg = SendFile(
             file_name=file_name, index=index, total_parts=total_parts, payload=payload
         )
-        (msg.length,) = length
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -518,11 +530,12 @@ class DeleteFile(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "DeleteFile":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        crc,length = cls._check_crc_and_get_metadata(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = DeleteFile(file=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -541,11 +554,12 @@ class GetFileUart(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "GetFileUart":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        crc,length = cls._check_crc_and_get_metadata(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = GetFileUart(file=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -603,12 +617,13 @@ class ExecuteCommand(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ExecuteCommand":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        crc,length = cls._check_crc_and_get_metadata(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (command_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         value = data
         msg = ExecuteCommand(command_id=command_id, value=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
@@ -664,12 +679,13 @@ class ExecuteCommandResponse(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "ExecuteCommandResponse":
-        if not cls.__check_crc(data): return None
-        pos = 3  # offset to start of body (skips length field)
+        crc,length = cls._check_crc_and_get_metadata(data)
+        pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (response_code,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         value = data
         msg = ExecuteCommandResponse(response_code=response_code, value=value)
-        (msg.length,) = struct.unpack(">H", data[1:pos])
+        msg.crc = crc
+        msg.length = length
         return msg
 
     def _encode_body(self) -> bytes:
