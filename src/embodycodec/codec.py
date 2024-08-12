@@ -6,6 +6,7 @@ messages.
 """
 
 import struct
+import traceback
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
@@ -59,6 +60,12 @@ class Message(ABC):
 
     @classmethod
     def _check_crc_and_get_metadata(cls, data: bytes) -> tuple[int, int]:
+        if len(data) < cls.hdr_len:
+            # Note: This is not technically an error as more data may arrive allowing the message to be decoded,
+            # but raised as error to split it from the resulting length found in the process of checking crc
+            raise BufferError(
+                f"Buffer too short for header in type {data[0]:02X}: Received {len(data)} bytes, required {cls.hdr_len} bytes"
+            )
         (
             data_type,
             data_length,
@@ -67,7 +74,7 @@ class Message(ABC):
             # Note: This is not technically an error as more data may arrive allowing the message to be decoded,
             # but raised as error to split it from the resulting length found in the process of checking crc
             raise BufferError(
-                f"Buffer too short for message: Received {len(data)} bytes, expected {data_length} bytes"
+                f"Buffer too short for message type {data_type:02X}: Received {len(data)} bytes, expected {data_length} bytes"
             )
         (crc,) = struct.unpack(">H", data[data_length - 2 : data_length])
         calculated_crc = crc16(data[0 : data_length - 2])
@@ -80,7 +87,7 @@ class Message(ABC):
     @classmethod
     def decode(cls: type[T], data: bytes) -> T:
         """Decode bytes into message object"""
-        crc, length = cls._check_crc_and_get_metadata(data)
+        (crc, length) = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = cls(
             *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
@@ -111,6 +118,19 @@ class Message(ABC):
             self.msg_type,
             len(body) + self.hdr_len + self.crc_len,
         )
+
+    @classmethod
+    def get_meta(cls, data: bytes) -> tuple[int, int]:
+        if len(data) < cls.hdr_len:
+            # raised as error to allow more bufring
+            raise BufferError(
+                f"Buffer too short for message: Received {len(data)} bytes, Metadata requires at least {Message.hdr_len} bytes!"
+            )
+        (
+            data_type,
+            data_length,
+        ) = struct.unpack(cls.struct_hdr_format, data[0 : cls.hdr_len])
+        return data_type, data_length
 
 
 @dataclass
@@ -388,7 +408,7 @@ class RawPulseListChanged(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "RawPulseListChanged":
-        crc, length = cls._check_crc_and_get_metadata(data)
+        (crc, length) = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
         value = a.PulseRawListAttribute.decode(data[pos + 1 :])
@@ -468,7 +488,8 @@ class ListFilesResponse(Message):
 
 @dataclass
 class FileDataChunk(Message):
-    struct_format = ">BI"
+    struct_format = "<BI"
+    """Format of new package uses little endian inside for maximum speed of transfer at device side"""
     msg_type = 0xCA
     fileref: int = 0
     """Used to identify to the host which file the chunk belongs to. Taken from the send command as supplied by host"""
@@ -477,6 +498,7 @@ class FileDataChunk(Message):
 
     @classmethod
     def decode(cls, data: bytes) -> "FileDataChunk":
+
         crc, length = cls._check_crc_and_get_metadata(data)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = FileDataChunk()
@@ -745,12 +767,21 @@ def decode(data: bytes) -> Message:
     raises BufferError if data buffer is too short.
     raises DecodeError if error decoding message.
     raises LookupError if unknown message type.
+    raises CrcError if checksum fails.
     """
+    if not data:
+        raise BufferError("No data provided!")
 
+    # Get metadata
     (
         message_type,
         length,
-    ) = struct.unpack(">BH", data[0:3])
+    ) = Message.get_meta(data)
+    # Since we trim the data to catch any erronous decoding not matching packet length we must have enough data
+    if len(data) < length:
+        raise BufferError(
+            f"Buffer too short for decoding type 0x{data[0]:02X}: Received {len(data)} bytes, required {length} bytes"
+        )
     # Prepare the data by trimming off any additional data not part of packet
     trimmed_data = data[0:length]
     try:
@@ -814,6 +845,8 @@ def decode(data: bytes) -> Message:
             return SendFile.decode(trimmed_data)
         if message_type == SendFileResponse.msg_type:
             return SendFileResponse.decode(trimmed_data)
+        if message_type == FileDataChunk.msg_type:
+            return FileDataChunk.decode(trimmed_data)
         if message_type == DeleteFile.msg_type:
             return DeleteFile.decode(trimmed_data)
         if message_type == DeleteFileResponse.msg_type:
@@ -834,6 +867,10 @@ def decode(data: bytes) -> Message:
             return DeleteAllFiles.decode(trimmed_data)
         if message_type == DeleteAllFilesResponse.msg_type:
             return DeleteAllFilesResponse.decode(trimmed_data)
+    except BufferError as e:
+        raise e
+    except CrcError as e:
+        raise e
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
         raise DecodeError(
