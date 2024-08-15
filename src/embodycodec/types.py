@@ -44,7 +44,7 @@ class ComplexType(ABC):
     def decode(cls: type[T], data: bytes) -> T:
         if len(data) < cls.default_length():
             raise BufferError(
-                f"Buffer too short for message. Received "
+                f"Buffer too short for {cls.__class__.__name__} message. Received "
                 f"{len(data)} bytes, expected {cls.default_length()} bytes"
             )
         msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.default_length()])))
