@@ -51,7 +51,7 @@ def test_decode_accept_crc_error():
     """Test decode function with accept_crc_error parameter."""
     # Create a message with known bad CRC
     message = bytearray(b"\x01\x00\x05")  # Heartbeat message
-    message += b"\xAA\xBB"  # Bad CRC values
+    message += b"\xaa\xbb"  # Bad CRC values
 
     # Should raise CRC error when not accepting CRC errors
     with pytest.raises(CrcError):
@@ -79,7 +79,7 @@ def test_decode_decoding_exception():
 
 
 def test_decode_heartbeat() -> None:
-    message = b"\x01\x00\x05\xAB\x09"
+    message = b"\x01\x00\x05\xab\x09"
     heartbeat = codec.decode(message)
     assert heartbeat is not None
     assert heartbeat.length == 5
@@ -88,7 +88,7 @@ def test_decode_heartbeat() -> None:
 
 def test_encode_heartbeat() -> None:
     heartbeat = codec.Heartbeat()
-    assert heartbeat.encode() == b"\x01\x00\x05\xAB\x09"
+    assert heartbeat.encode() == b"\x01\x00\x05\xab\x09"
 
 
 def test_heartbeat_response() -> None:
@@ -103,7 +103,7 @@ def test_heartbeat_response() -> None:
 def test_nack_response() -> None:
     nack_response = codec.NackResponse(0x02)
     encoded = nack_response.encode()
-    assert encoded == b"\x82\x00\x06\x02\x3E\x74"
+    assert encoded == b"\x82\x00\x06\x02\x3e\x74"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.NackResponse)
     assert decoded.length == 6
@@ -129,7 +129,7 @@ def test_set_attribute() -> None:
 def test_set_attribute_response() -> None:
     response = codec.SetAttributeResponse()
     encoded = response.encode()
-    assert encoded == b"\x91\x00\x05\xD3\x30"
+    assert encoded == b"\x91\x00\x05\xd3\x30"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.SetAttributeResponse)
     assert decoded.length == 5
@@ -144,7 +144,7 @@ def test_set_attribute_response_in_stream_of_messages() -> None:
 
 
 def test_decode_get_attribute() -> None:
-    message = b"\x12\x00\x06\xA1\x7D\x62"
+    message = b"\x12\x00\x06\xa1\x7d\x62"
     get_attribute = codec.decode(message)
     assert get_attribute is not None
     assert isinstance(get_attribute, codec.GetAttribute)
@@ -155,7 +155,7 @@ def test_decode_get_attribute() -> None:
 
 def test_encode_get_attribute() -> None:
     get_attribute = codec.GetAttribute(0xA1)
-    assert get_attribute.encode() == b"\x12\x00\x06\xA1\x7D\x62"
+    assert get_attribute.encode() == b"\x12\x00\x06\xa1\x7d\x62"
 
 
 def test_get_attribute_response_current_time() -> None:
@@ -195,7 +195,7 @@ def test_reset_attribute() -> None:
 def test_reset_attribute_response() -> None:
     response = codec.ResetAttributeResponse()
     encoded = response.encode()
-    assert encoded == b"\x93\x00\x05\xBD\x50"
+    assert encoded == b"\x93\x00\x05\xbd\x50"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ResetAttributeResponse)
     assert decoded.length == 5
@@ -217,7 +217,7 @@ def test_configure_reporting() -> None:
 def test_configure_reporting_response() -> None:
     response = codec.ConfigureReportingResponse()
     encoded = response.encode()
-    assert encoded == b"\x94\x00\x05\x38\xC0"
+    assert encoded == b"\x94\x00\x05\x38\xc0"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ConfigureReportingResponse)
     assert decoded.length == 5
@@ -227,7 +227,7 @@ def test_configure_reporting_response() -> None:
 def test_reset_reporting() -> None:
     response = codec.ResetReporting(attribute_id=0xA1)
     encoded = response.encode()
-    assert encoded == b"\x15\x00\x06\xA1\x2C\x4F"
+    assert encoded == b"\x15\x00\x06\xa1\x2c\x4f"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ResetReporting)
     assert decoded.length == 6
@@ -237,7 +237,7 @@ def test_reset_reporting() -> None:
 def test_reset_reporting_response() -> None:
     response = codec.ResetReportingResponse()
     encoded = response.encode()
-    assert encoded == b"\x95\x00\x05\x0F\xF0"
+    assert encoded == b"\x95\x00\x05\x0f\xf0"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ResetReportingResponse)
     assert decoded.length == 5
@@ -266,7 +266,7 @@ def test_periodic_recording() -> None:
 def test_periodic_recording_response() -> None:
     response = codec.PeriodicRecordingResponse()
     encoded = response.encode()
-    assert encoded == b"\x96\x00\x05\x56\xA0"
+    assert encoded == b"\x96\x00\x05\x56\xa0"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.PeriodicRecordingResponse)
     assert decoded.length == 5
@@ -294,7 +294,7 @@ def test_attribute_changed() -> None:
 def test_attribute_changed_response() -> None:
     response = codec.AttributeChangedResponse()
     encoded = response.encode()
-    assert encoded == b"\xA1\x00\x05\x16\x95"
+    assert encoded == b"\xa1\x00\x05\x16\x95"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.AttributeChangedResponse)
     assert decoded.length == 5
@@ -332,7 +332,7 @@ def test_raw_pulse_changed_3_ppgs() -> None:
 def test_raw_pulse_changed_response() -> None:
     response = codec.RawPulseChangedResponse()
     encoded = response.encode()
-    assert encoded == b"\xA2\x00\x05\x4F\xC5"
+    assert encoded == b"\xa2\x00\x05\x4f\xc5"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.RawPulseChangedResponse)
     assert decoded.length == 5
@@ -391,7 +391,7 @@ def test_alarm() -> None:
 def test_alarm_response() -> None:
     response = codec.AlarmResponse()
     encoded = response.encode()
-    assert encoded == b"\xB1\x00\x05\x55\xF6"
+    assert encoded == b"\xb1\x00\x05\x55\xf6"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.AlarmResponse)
     assert decoded.length == 5
@@ -401,7 +401,7 @@ def test_alarm_response() -> None:
 def test_list_files() -> None:
     response = codec.ListFiles()
     encoded = response.encode()
-    assert encoded == b"\x41\x00\x05\xB6\xA4"
+    assert encoded == b"\x41\x00\x05\xb6\xa4"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ListFiles)
     assert decoded.length == 5
@@ -627,7 +627,7 @@ def test_get_file() -> None:
 def test_get_file_response() -> None:
     response = codec.GetFileResponse()
     encoded = response.encode()
-    assert encoded == b"\xC2\x00\x05\xD4\xAE"
+    assert encoded == b"\xc2\x00\x05\xd4\xae"
     decoded = codec.decode(encoded)
     assert decoded.length == 5
     assert isinstance(decoded, codec.GetFileResponse)
@@ -678,7 +678,7 @@ def test_delete_file() -> None:
 def test_delete_file_response() -> None:
     response = codec.DeleteFileResponse()
     encoded = response.encode()
-    assert encoded == b"\xC4\x00\x05\x66\x0E"
+    assert encoded == b"\xc4\x00\x05\x66\x0e"
     decoded = codec.decode(encoded)
     assert decoded.length == 5
     assert isinstance(decoded, codec.DeleteFileResponse)
@@ -701,7 +701,7 @@ def test_get_file_uart_file() -> None:
 def test_get_file_uart_response() -> None:
     response = codec.GetFileUartResponse()
     encoded = response.encode()
-    assert encoded == b"\xC5\x00\x05\x51\x3E"
+    assert encoded == b"\xc5\x00\x05\x51\x3e"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.GetFileUartResponse)
     assert decoded.length == 5
@@ -731,7 +731,7 @@ def test_reformat_disk_response() -> None:
 def test_execute_command() -> None:
     response = codec.ExecuteCommand(1, b"")
     encoded = response.encode()
-    assert encoded == b"\x51\x00\x06\x01\x3D\xC8"
+    assert encoded == b"\x51\x00\x06\x01\x3d\xc8"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.ExecuteCommand)
     assert decoded.length == 6

@@ -263,7 +263,7 @@ def test_encode_decode_imu_raw() -> None:
 
 def test_encode_decode_heart_rate_interval() -> None:
     do_test_encode_decode_attribute(
-        attributes.HeartRateIntervalAttribute(value=15), b"\x00\x0F"
+        attributes.HeartRateIntervalAttribute(value=15), b"\x00\x0f"
     )
 
 
@@ -301,12 +301,12 @@ def test_encode_decode_gyro_raw() -> None:
 
 def test_encode_decode_temperature() -> None:
     decoded = do_test_encode_decode_attribute(
-        attributes.TemperatureAttribute(value=3200), b"\x0C\x80"
+        attributes.TemperatureAttribute(value=3200), b"\x0c\x80"
     )
     assert decoded.temp_celsius() == 25.0
     assert decoded.formatted_value() == "25.0"
     decoded = do_test_encode_decode_attribute(
-        attributes.TemperatureAttribute(value=-5120), b"\xEC\x00"
+        attributes.TemperatureAttribute(value=-5120), b"\xec\x00"
     )
     assert decoded.temp_celsius() == -40.0
     assert decoded.formatted_value() == "-40.0"
