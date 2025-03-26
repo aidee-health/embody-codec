@@ -1,9 +1,81 @@
 import struct
 from datetime import datetime
 
+import pytest
+
 from embodycodec import attributes
 from embodycodec import codec
 from embodycodec import types
+from embodycodec.exceptions import CrcError
+from embodycodec.exceptions import DecodeError
+
+
+def test_decode_empty_buffer():
+    """Test decode function with empty buffer."""
+    with pytest.raises(BufferError, match="No data provided!"):
+        codec.decode(b"")
+
+
+def test_decode_buffer_too_short():
+    """Test decode function with buffer that's too short for header."""
+    with pytest.raises(BufferError, match="Buffer too short for message"):
+        codec.decode(b"\x01\x00")
+
+
+def test_decode_buffer_too_short_for_decoding():
+    """Test decode function with buffer that's too short for full message."""
+    with pytest.raises(BufferError, match="Buffer too short for decoding"):
+        codec.decode(b"\x01\x00\x10\x00")
+
+
+def test_decode_unknown_message_type():
+    """Test decode function with unknown message type."""
+    # Create a message with unknown type but valid length and CRC
+    message = bytearray(b"\xff\x00\x05\x00\x00")
+    # Calculate and set valid CRC
+    crc = codec.crc16(message[0:3])
+    message[3:5] = struct.pack(">H", crc)
+
+    with pytest.raises(LookupError, match="Unknown message type 0xff"):
+        codec.decode(bytes(message))
+
+
+def test_decode_invalid_crc():
+    """Test decode function with invalid CRC."""
+    with pytest.raises(CrcError, match="CRC error"):
+        # Heartbeat message with invalid CRC
+        codec.decode(b"\x01\x00\x05\x00\x00")
+
+
+def test_decode_accept_crc_error():
+    """Test decode function with accept_crc_error parameter."""
+    # Create a message with known bad CRC
+    message = bytearray(b"\x01\x00\x05")  # Heartbeat message
+    message += b"\xAA\xBB"  # Bad CRC values
+
+    # Should raise CRC error when not accepting CRC errors
+    with pytest.raises(CrcError):
+        codec.decode(message, accept_crc_error=False)
+
+    # Should successfully decode when accepting CRC errors
+    result = codec.decode(message, accept_crc_error=True)
+    assert isinstance(result, codec.Heartbeat)
+    assert result.length == 5
+
+
+def test_decode_decoding_exception():
+    """Test decode function when actual message decoding fails."""
+    # Create a message with valid type and CRC but malformed content
+    message = bytearray(b"\x11\x00\x09\x01\x01\x00\x00\x00")
+    # Calculate and set valid CRC
+    crc = codec.crc16(message[0:6])
+    message[6:8] = struct.pack(">H", crc)
+
+    with pytest.raises(
+        BufferError,
+        match="Buffer too short for decoding type 0x11: Received 8 bytes, required 9 bytes",
+    ):
+        codec.decode(bytes(message))
 
 
 def test_decode_heartbeat() -> None:
