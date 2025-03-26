@@ -1,5 +1,4 @@
-"""Complex types for the EmBody device
-"""
+"""Complex types for the EmBody device"""
 
 import enum
 import struct

@@ -82,7 +82,10 @@ class ComplexTypeAttribute(Attribute, ABC):
 
     @classmethod
     def decode(cls: type[CT], data: bytes) -> CT:
-        attr = cls(cls.__dataclass_fields__["value"].type.decode(data))
+        value_type = cls.__annotations__["value"]
+        if hasattr(value_type, "__origin__"):
+            value_type = value_type.__args__[0]
+        attr = cls(value_type.decode(data))
         return attr
 
     def encode(self) -> bytes:

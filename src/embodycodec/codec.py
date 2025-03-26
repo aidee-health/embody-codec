@@ -59,7 +59,9 @@ class Message(ABC):
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def _check_crc_and_get_metadata(cls, data: bytes) -> tuple[int, int]:
+    def _check_crc_and_get_metadata(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> tuple[int, int]:
         if len(data) < cls.hdr_len:
             # Note: This is not technically an error as more data may arrive allowing the message to be decoded,
             # but raised as error to split it from the resulting length found in the process of checking crc
@@ -78,16 +80,16 @@ class Message(ABC):
             )
         (crc,) = struct.unpack(">H", data[data_length - 2 : data_length])
         calculated_crc = crc16(data[0 : data_length - 2])
-        if crc != calculated_crc:
+        if crc != calculated_crc and not accept_crc_error:
             raise CrcError(
                 f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
             )
         return crc, data_length
 
     @classmethod
-    def decode(cls: type[T], data: bytes) -> T:
+    def decode(cls: type[T], data: bytes, accept_crc_error: bool = False) -> T:
         """Decode bytes into message object"""
-        (crc, length) = cls._check_crc_and_get_metadata(data)
+        (crc, length) = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = cls(
             *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
@@ -174,8 +176,8 @@ class SetAttribute(Message):
     value: a.Attribute
 
     @classmethod
-    def decode(cls, data: bytes) -> "SetAttribute":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "SetAttribute":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (
             attribute_id,
@@ -215,8 +217,10 @@ class GetAttributeResponse(Message):
     value: a.Attribute
 
     @classmethod
-    def decode(cls, data: bytes) -> "GetAttributeResponse":
-        crc, data_length = cls._check_crc_and_get_metadata(data)
+    def decode(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> "GetAttributeResponse":
+        crc, data_length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         (changed_at,) = struct.unpack(">Q", data[pos + 1 : pos + 9])
@@ -263,8 +267,10 @@ class ConfigureReporting(Message):
     reporting: t.Reporting
 
     @classmethod
-    def decode(cls, data: bytes) -> "ConfigureReporting":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> "ConfigureReporting":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         reporting = t.Reporting.decode(
@@ -286,8 +292,10 @@ class ConfigureReportingResponse(Message):
     msg_type = 0x94
 
     @classmethod
-    def decode(cls, data: bytes) -> "ConfigureReportingResponse":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> "ConfigureReportingResponse":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         msg = ConfigureReportingResponse()
         msg.crc = crc
         msg.length = length
@@ -312,8 +320,8 @@ class PeriodicRecording(Message):
     recording: t.Recording
 
     @classmethod
-    def decode(cls, data: bytes) -> "PeriodicRecording":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "PeriodicRecording":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         recording = t.Recording.decode(
             data[pos + 0 : pos + t.Recording.default_length()]
@@ -340,8 +348,8 @@ class AttributeChanged(Message):
     value: a.Attribute
 
     @classmethod
-    def decode(cls, data: bytes) -> "AttributeChanged":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "AttributeChanged":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
@@ -372,8 +380,8 @@ class RawPulseChanged(Message):
     value: Union[t.PulseRawAll, t.PulseRaw]
 
     @classmethod
-    def decode(cls, data: bytes) -> "RawPulseChanged":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "RawPulseChanged":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         header_crc = 7  # attrib_id (1B) + length (2B) + changed_at (2B) + crc (2B)
         (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
@@ -407,8 +415,10 @@ class RawPulseListChanged(Message):
     value: a.PulseRawListAttribute
 
     @classmethod
-    def decode(cls, data: bytes) -> "RawPulseListChanged":
-        (crc, length) = cls._check_crc_and_get_metadata(data)
+    def decode(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> "RawPulseListChanged":
+        (crc, length) = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
         value = a.PulseRawListAttribute.decode(data[pos + 1 :])
@@ -459,8 +469,8 @@ class ListFilesResponse(Message):
     files: list[t.FileWithLength]
 
     @classmethod
-    def decode(cls, data: bytes) -> "ListFilesResponse":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ListFilesResponse":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         # ListFiles length
         msg = ListFilesResponse(files=[])
@@ -497,9 +507,8 @@ class FileDataChunk(Message):
     file_data: bytes = b""
 
     @classmethod
-    def decode(cls, data: bytes) -> "FileDataChunk":
-
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "FileDataChunk":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         msg = FileDataChunk()
         # fileref and offset
@@ -523,8 +532,8 @@ class GetFile(Message):
     file: t.File
 
     @classmethod
-    def decode(cls, data: bytes) -> "GetFile":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetFile":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = GetFile(file=value)
@@ -550,8 +559,8 @@ class SendFile(Message):
     payload: bytes
 
     @classmethod
-    def decode(cls, data: bytes) -> "SendFile":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "SendFile":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         file_name = t.File.decode(data[pos:])
         (index,) = struct.unpack(
@@ -591,8 +600,8 @@ class DeleteFile(Message):
     file: t.File
 
     @classmethod
-    def decode(cls, data: bytes) -> "DeleteFile":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "DeleteFile":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = DeleteFile(file=value)
@@ -615,8 +624,8 @@ class GetFileUart(Message):
     file: t.File
 
     @classmethod
-    def decode(cls, data: bytes) -> "GetFileUart":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetFileUart":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         value = t.File.decode(data[pos:])
         msg = GetFileUart(file=value)
@@ -678,8 +687,8 @@ class ExecuteCommand(Message):
         return self.command_types.get(self.command_id)
 
     @classmethod
-    def decode(cls, data: bytes) -> "ExecuteCommand":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ExecuteCommand":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (command_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         value = data
@@ -740,8 +749,10 @@ class ExecuteCommandResponse(Message):
     value: bytes
 
     @classmethod
-    def decode(cls, data: bytes) -> "ExecuteCommandResponse":
-        crc, length = cls._check_crc_and_get_metadata(data)
+    def decode(
+        cls, data: bytes, accept_crc_error: bool = False
+    ) -> "ExecuteCommandResponse":
+        crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (response_code,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         value = data
@@ -761,7 +772,7 @@ class ExecuteCommandResponse(Message):
         return attribute_part
 
 
-def decode(data: bytes) -> Message:
+def decode(data: bytes, accept_crc_error: bool = False) -> Message:
     """Decodes a bytes object into proper message object.
 
     raises BufferError if data buffer is too short.
@@ -786,87 +797,87 @@ def decode(data: bytes) -> Message:
     trimmed_data = data[0:length]
     try:
         if message_type == Heartbeat.msg_type:
-            return Heartbeat.decode(trimmed_data)
+            return Heartbeat.decode(trimmed_data, accept_crc_error)
         if message_type == HeartbeatResponse.msg_type:
-            return HeartbeatResponse.decode(trimmed_data)
+            return HeartbeatResponse.decode(trimmed_data, accept_crc_error)
         if message_type == NackResponse.msg_type:
-            return NackResponse.decode(trimmed_data)
+            return NackResponse.decode(trimmed_data, accept_crc_error)
         if message_type == SetAttribute.msg_type:
-            return SetAttribute.decode(trimmed_data)
+            return SetAttribute.decode(trimmed_data, accept_crc_error)
         if message_type == SetAttributeResponse.msg_type:
-            return SetAttributeResponse.decode(trimmed_data)
+            return SetAttributeResponse.decode(trimmed_data, accept_crc_error)
         if message_type == GetAttribute.msg_type:
-            return GetAttribute.decode(trimmed_data)
+            return GetAttribute.decode(trimmed_data, accept_crc_error)
         if message_type == GetAttributeResponse.msg_type:
-            return GetAttributeResponse.decode(trimmed_data)
+            return GetAttributeResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ResetAttribute.msg_type:
-            return ResetAttribute.decode(trimmed_data)
+            return ResetAttribute.decode(trimmed_data, accept_crc_error)
         if message_type == ResetAttributeResponse.msg_type:
-            return ResetAttributeResponse.decode(trimmed_data)
+            return ResetAttributeResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ConfigureReporting.msg_type:
-            return ConfigureReporting.decode(trimmed_data)
+            return ConfigureReporting.decode(trimmed_data, accept_crc_error)
         if message_type == ConfigureReportingResponse.msg_type:
-            return ConfigureReportingResponse.decode(trimmed_data)
+            return ConfigureReportingResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ResetReporting.msg_type:
-            return ResetReporting.decode(trimmed_data)
+            return ResetReporting.decode(trimmed_data, accept_crc_error)
         if message_type == ResetReportingResponse.msg_type:
-            return ResetReportingResponse.decode(trimmed_data)
+            return ResetReportingResponse.decode(trimmed_data, accept_crc_error)
         if message_type == PeriodicRecording.msg_type:
-            return PeriodicRecording.decode(trimmed_data)
+            return PeriodicRecording.decode(trimmed_data, accept_crc_error)
         if message_type == PeriodicRecordingResponse.msg_type:
-            return PeriodicRecordingResponse.decode(trimmed_data)
+            return PeriodicRecordingResponse.decode(trimmed_data, accept_crc_error)
         if message_type == AttributeChanged.msg_type:
-            return AttributeChanged.decode(trimmed_data)
+            return AttributeChanged.decode(trimmed_data, accept_crc_error)
         if message_type == AttributeChangedResponse.msg_type:
-            return AttributeChangedResponse.decode(trimmed_data)
+            return AttributeChangedResponse.decode(trimmed_data, accept_crc_error)
         if message_type == RawPulseChanged.msg_type:
-            return RawPulseChanged.decode(trimmed_data)
+            return RawPulseChanged.decode(trimmed_data, accept_crc_error)
         if message_type == RawPulseChangedResponse.msg_type:
-            return RawPulseChangedResponse.decode(trimmed_data)
+            return RawPulseChangedResponse.decode(trimmed_data, accept_crc_error)
         if message_type == RawPulseListChanged.msg_type:
-            return RawPulseListChanged.decode(trimmed_data)
+            return RawPulseListChanged.decode(trimmed_data, accept_crc_error)
         if message_type == RawPulseListChangedResponse.msg_type:
-            return RawPulseListChangedResponse.decode(trimmed_data)
+            return RawPulseListChangedResponse.decode(trimmed_data, accept_crc_error)
         if message_type == Alarm.msg_type:
-            return Alarm.decode(trimmed_data)
+            return Alarm.decode(trimmed_data, accept_crc_error)
         if message_type == AlarmResponse.msg_type:
-            return AlarmResponse.decode(trimmed_data)
+            return AlarmResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ListFiles.msg_type:
-            return ListFiles.decode(trimmed_data)
+            return ListFiles.decode(trimmed_data, accept_crc_error)
         if message_type == ListFilesResponse.msg_type:
-            return ListFilesResponse.decode(trimmed_data)
+            return ListFilesResponse.decode(trimmed_data, accept_crc_error)
         if message_type == GetFile.msg_type:
-            return GetFile.decode(trimmed_data)
+            return GetFile.decode(trimmed_data, accept_crc_error)
         if message_type == GetFileResponse.msg_type:
-            return GetFileResponse.decode(trimmed_data)
+            return GetFileResponse.decode(trimmed_data, accept_crc_error)
         if message_type == FileDataChunk.msg_type:
-            return FileDataChunk.decode(trimmed_data)
+            return FileDataChunk.decode(trimmed_data, accept_crc_error)
         if message_type == SendFile.msg_type:
-            return SendFile.decode(trimmed_data)
+            return SendFile.decode(trimmed_data, accept_crc_error)
         if message_type == SendFileResponse.msg_type:
-            return SendFileResponse.decode(trimmed_data)
+            return SendFileResponse.decode(trimmed_data, accept_crc_error)
         if message_type == FileDataChunk.msg_type:
-            return FileDataChunk.decode(trimmed_data)
+            return FileDataChunk.decode(trimmed_data, accept_crc_error)
         if message_type == DeleteFile.msg_type:
-            return DeleteFile.decode(trimmed_data)
+            return DeleteFile.decode(trimmed_data, accept_crc_error)
         if message_type == DeleteFileResponse.msg_type:
-            return DeleteFileResponse.decode(trimmed_data)
+            return DeleteFileResponse.decode(trimmed_data, accept_crc_error)
         if message_type == GetFileUart.msg_type:
-            return GetFileUart.decode(trimmed_data)
+            return GetFileUart.decode(trimmed_data, accept_crc_error)
         if message_type == GetFileUartResponse.msg_type:
-            return GetFileUartResponse.decode(trimmed_data)
+            return GetFileUartResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ReformatDisk.msg_type:
-            return ReformatDisk.decode(trimmed_data)
+            return ReformatDisk.decode(trimmed_data, accept_crc_error)
         if message_type == ReformatDiskResponse.msg_type:
-            return ReformatDiskResponse.decode(trimmed_data)
+            return ReformatDiskResponse.decode(trimmed_data, accept_crc_error)
         if message_type == ExecuteCommand.msg_type:
-            return ExecuteCommand.decode(trimmed_data)
+            return ExecuteCommand.decode(trimmed_data, accept_crc_error)
         if message_type == ExecuteCommandResponse.msg_type:
-            return ExecuteCommandResponse.decode(trimmed_data)
+            return ExecuteCommandResponse.decode(trimmed_data, accept_crc_error)
         if message_type == DeleteAllFiles.msg_type:
-            return DeleteAllFiles.decode(trimmed_data)
+            return DeleteAllFiles.decode(trimmed_data, accept_crc_error)
         if message_type == DeleteAllFilesResponse.msg_type:
-            return DeleteAllFilesResponse.decode(trimmed_data)
+            return DeleteAllFilesResponse.decode(trimmed_data, accept_crc_error)
     except BufferError as e:
         raise e
     except CrcError as e:
