@@ -48,6 +48,7 @@ jobs:
       - name: Install Poetry
         run: |
           pip install --constraint=.github/workflows/constraints.txt poetry
+          pip install --constraint=.github/workflows/constraints.txt poetry-plugin-export
           poetry --version
 
       - name: Install Nox
@@ -111,6 +112,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install --pip-args=--constraint=${{ github.workspace }}/.github/workflows/constraints.txt poetry
+          pipx inject --pip-args=--constraint=${{ github.workspace }}/.github/workflows/constraints.txt poetry poetry-plugin-export
           poetry --version
 
       - name: Install Nox
