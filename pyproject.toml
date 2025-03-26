@@ -20,7 +20,7 @@ Changelog = "https://github.com/aidee-health/embody-codec/releases"
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = ">=21.10b0"
 coverage = {extras = ["toml"], version = ">=6.2"}
 darglint = ">=1.8.1"
