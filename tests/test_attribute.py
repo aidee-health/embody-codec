@@ -12,15 +12,11 @@ def test_encode_decode_serial_no() -> None:
 
 
 def test_serial_no_attribute_format_value() -> None:
-    assert (
-        attributes.SerialNoAttribute(12345678).formatted_value() == "0000000000BC614E"
-    )
+    assert attributes.SerialNoAttribute(12345678).formatted_value() == "0000000000BC614E"
 
 
 def test_encode_decode_firmware_version() -> None:
-    do_test_encode_decode_attribute(
-        attributes.FirmwareVersionAttribute(0x050202), b"\x05\x02\x02"
-    )
+    do_test_encode_decode_attribute(attributes.FirmwareVersionAttribute(0x050202), b"\x05\x02\x02")
 
 
 def test_firmware_version_format_value() -> None:
@@ -46,9 +42,7 @@ def test_encode_decode_model() -> None:
 
 
 def test_encode_decode_vendor() -> None:
-    do_test_encode_decode_attribute(
-        attributes.VendorAttribute("Aidee"), b"\x41\x69\x64\x65\x65"
-    )
+    do_test_encode_decode_attribute(attributes.VendorAttribute("Aidee"), b"\x41\x69\x64\x65\x65")
 
 
 def test_encode_decode_afe_settings() -> None:
@@ -95,10 +89,7 @@ def test_encode_decode_afe_settings_all() -> None:
 def test_encode_decode_current_time() -> None:
     do_test_encode_decode_attribute(
         attributes.CurrentTimeAttribute(
-            int(
-                datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp()
-                * 1000
-            )
+            int(datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp() * 1000)
         ),
         b"\x00\x00\x01\x80\x44\x49\xbe\xa3",
     )
@@ -107,19 +98,14 @@ def test_encode_decode_current_time() -> None:
 def test_current_time_format_value() -> None:
     assert (
         attributes.CurrentTimeAttribute(
-            int(
-                datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp()
-                * 1000
-            )
+            int(datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp() * 1000)
         ).formatted_value()
         == "2022-04-20T00:05:25+00:00"
     )
 
 
 def test_encode_decode_measurement_deactivated() -> None:
-    do_test_encode_decode_attribute(
-        attributes.MeasurementDeactivatedAttribute(1), b"\x01"
-    )
+    do_test_encode_decode_attribute(attributes.MeasurementDeactivatedAttribute(1), b"\x01")
 
 
 def test_encode_decode_measurement_trace_level() -> None:
@@ -158,9 +144,7 @@ def test_encode_decode_pulse_raw() -> None:
 
 def test_encode_decode_pulse_raw_all() -> None:
     do_test_encode_decode_attribute(
-        attributes.PulseRawAllAttribute(
-            value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)
-        ),
+        attributes.PulseRawAllAttribute(value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)),
         b"\x00\x00\x00\x01\x00\x00\x03\xe8\x00\x00\x00\x64\x00\x00\x00\x05",
     )
 
@@ -196,9 +180,7 @@ def test_convert_pulse_raw_list_format_to_complex_byte() -> None:
 
 def test_encode_decode_pulse_blood_pressure() -> None:
     do_test_encode_decode_attribute(
-        attributes.BloodPressureAttribute(
-            value=types.BloodPressure(sys=120, dia=80, bp_map=100, pat=78, pulse=55)
-        ),
+        attributes.BloodPressureAttribute(value=types.BloodPressure(sys=120, dia=80, bp_map=100, pat=78, pulse=55)),
         b"\x00\x78\x00\x50\x00\x64\x00\x00\x00\x4e\x00\x37",
     )
 
@@ -211,9 +193,7 @@ def test_encode_decode_imu() -> None:
 
 
 def test_encode_decode_heart_rate() -> None:
-    do_test_encode_decode_attribute(
-        attributes.HeartrateAttribute(value=55), b"\x00\x37"
-    )
+    do_test_encode_decode_attribute(attributes.HeartrateAttribute(value=55), b"\x00\x37")
 
 
 def test_encode_decode_sleep_mode() -> None:
@@ -225,46 +205,34 @@ def test_encode_decode_breath_rate() -> None:
 
 
 def test_encode_decode_heart_rate_variability() -> None:
-    do_test_encode_decode_attribute(
-        attributes.HeartRateVariabilityAttribute(value=102), b"\x00\x66"
-    )
+    do_test_encode_decode_attribute(attributes.HeartRateVariabilityAttribute(value=102), b"\x00\x66")
 
 
 def test_encode_decode_charge_state() -> None:
-    decoded = do_test_encode_decode_attribute(
-        attributes.ChargeStateAttribute(value=True), b"\x01"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.ChargeStateAttribute(value=True), b"\x01")
     assert decoded.value is True
 
 
 def test_encode_decode_belt_on_body_state() -> None:
-    decoded = do_test_encode_decode_attribute(
-        attributes.BeltOnBodyStateAttribute(value=False), b"\x00"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.BeltOnBodyStateAttribute(value=False), b"\x00")
     assert decoded.value is False
 
 
 def test_encode_decode_firmware_update_progress() -> None:
-    do_test_encode_decode_attribute(
-        attributes.FirmwareUpdateProgressAttribute(value=95), b"\x5f"
-    )
+    do_test_encode_decode_attribute(attributes.FirmwareUpdateProgressAttribute(value=95), b"\x5f")
 
 
 def test_encode_decode_imu_raw() -> None:
     do_test_encode_decode_attribute(
         attributes.ImuRawAttribute(
-            value=types.ImuRaw(
-                acc_x=271, acc_y=-15381, acc_z=4991, gyr_x=46, gyr_y=-9, gyr_z=-36
-            )
+            value=types.ImuRaw(acc_x=271, acc_y=-15381, acc_z=4991, gyr_x=46, gyr_y=-9, gyr_z=-36)
         ),
         b"\x01\x0f\xc3\xeb\x13\x7f\x00\x2e\xff\xf7\xff\xdc",
     )
 
 
 def test_encode_decode_heart_rate_interval() -> None:
-    do_test_encode_decode_attribute(
-        attributes.HeartRateIntervalAttribute(value=15), b"\x00\x0f"
-    )
+    do_test_encode_decode_attribute(attributes.HeartRateIntervalAttribute(value=15), b"\x00\x0f")
 
 
 def test_encode_decode_pulse_raw_attribute() -> None:
@@ -276,18 +244,14 @@ def test_encode_decode_pulse_raw_attribute() -> None:
 
 def test_encode_decode_pulse_raw_all_attribute() -> None:
     do_test_encode_decode_attribute(
-        attributes.PulseRawAllAttribute(
-            value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)
-        ),
+        attributes.PulseRawAllAttribute(value=types.PulseRawAll(ecg=1, ppg_green=1000, ppg_red=100, ppg_ir=5)),
         b"\x00\x00\x00\x01\x00\x00\x03\xe8\x00\x00\x00\x64\x00\x00\x00\x05",
     )
 
 
 def test_encode_decode_acc_raw() -> None:
     do_test_encode_decode_attribute(
-        attributes.AccRawAttribute(
-            value=types.AccRaw(acc_x=271, acc_y=-15381, acc_z=4991)
-        ),
+        attributes.AccRawAttribute(value=types.AccRaw(acc_x=271, acc_y=-15381, acc_z=4991)),
         b"\x01\x0f\xc3\xeb\x13\x7f",
     )
 
@@ -300,14 +264,10 @@ def test_encode_decode_gyro_raw() -> None:
 
 
 def test_encode_decode_temperature() -> None:
-    decoded = do_test_encode_decode_attribute(
-        attributes.TemperatureAttribute(value=3200), b"\x0c\x80"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.TemperatureAttribute(value=3200), b"\x0c\x80")
     assert decoded.temp_celsius() == 25.0
     assert decoded.formatted_value() == "25.0"
-    decoded = do_test_encode_decode_attribute(
-        attributes.TemperatureAttribute(value=-5120), b"\xec\x00"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.TemperatureAttribute(value=-5120), b"\xec\x00")
     assert decoded.temp_celsius() == -40.0
     assert decoded.formatted_value() == "-40.0"
 
@@ -344,19 +304,13 @@ def test_encode_decode_flashinfo() -> None:
 
 
 def test_encode_decode_on_body_detect() -> None:
-    decoded = do_test_encode_decode_attribute(
-        attributes.OnBodyDetectAttribute(value=False), b"\x00"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.OnBodyDetectAttribute(value=False), b"\x00")
     assert decoded.value is False
-    decoded = do_test_encode_decode_attribute(
-        attributes.OnBodyDetectAttribute(value=True), b"\x01"
-    )
+    decoded = do_test_encode_decode_attribute(attributes.OnBodyDetectAttribute(value=True), b"\x01")
     assert decoded.value is True
 
 
-def do_test_encode_decode_attribute(
-    attribute: attributes.Attribute, expected_encoded: bytes
-):
+def do_test_encode_decode_attribute(attribute: attributes.Attribute, expected_encoded: bytes):
     encoded = attribute.encode()
     assert encoded == expected_encoded
     decoded = attributes.decode_attribute(attribute.attribute_id, encoded)

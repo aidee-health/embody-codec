@@ -1,4 +1,5 @@
-"""Codec for the EmBody device
+"""Codec for the EmBody device.
+
 A full embodycodec for the protocol specified for the EmBody device
 
 All protocol message types inherits from the Message class, and provides self-contained encoding and decoding of
@@ -6,16 +7,10 @@ messages.
 """
 
 import struct
-import traceback
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Type
 from typing import TypeVar
-from typing import Union
 
 from embodycodec import attributes as a
 from embodycodec import types as t
@@ -51,7 +46,7 @@ class Message(ABC):
     crc = -1
     """crc footer is dynamically set"""
 
-    length = int(-1)
+    length = -1
     """Length of entire message (header + body + crc). length is dynamically set"""
 
     @classmethod
@@ -59,9 +54,7 @@ class Message(ABC):
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def _check_crc_and_get_metadata(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> tuple[int, int]:
+    def _check_crc_and_get_metadata(cls, data: bytes, accept_crc_error: bool = False) -> tuple[int, int]:
         if len(data) < cls.hdr_len:
             # Note: This is not technically an error as more data may arrive allowing the message to be decoded,
             # but raised as error to split it from the resulting length found in the process of checking crc
@@ -81,9 +74,7 @@ class Message(ABC):
         (crc,) = struct.unpack(">H", data[data_length - 2 : data_length])
         calculated_crc = crc16(data[0 : data_length - 2])
         if crc != calculated_crc and not accept_crc_error:
-            raise CrcError(
-                f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}"
-            )
+            raise CrcError(f"CRC error: Calculated {calculated_crc:04X}, received {crc:04X}")
         return crc, data_length
 
     @classmethod
@@ -91,9 +82,7 @@ class Message(ABC):
         """Decode bytes into message object"""
         (crc, length) = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
-        msg = cls(
-            *(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()]))
-        )
+        msg = cls(*(struct.unpack(cls.struct_format, data[pos : pos + cls.__body_length()])))
         msg.crc = crc
         msg.length = length
         return msg
@@ -165,7 +154,7 @@ class NackResponse(Message):
     msg_type = 0x82
     response_code: int
 
-    def error_message(self) -> Optional[str]:
+    def error_message(self) -> str | None:
         return self.error_messages.get(self.response_code)
 
 
@@ -217,16 +206,12 @@ class GetAttributeResponse(Message):
     value: a.Attribute
 
     @classmethod
-    def decode(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> "GetAttributeResponse":
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetAttributeResponse":
         crc, data_length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
         (changed_at,) = struct.unpack(">Q", data[pos + 1 : pos + 9])
-        reporting = t.Reporting.decode(
-            data[pos + 9 : pos + 9 + t.Reporting.default_length()]
-        )
+        reporting = t.Reporting.decode(data[pos + 9 : pos + 9 + t.Reporting.default_length()])
         pos = pos + 9 + t.Reporting.default_length()
         (length,) = struct.unpack(">B", data[pos : pos + 1])
         value = a.decode_attribute(attribute_id, data[pos + 1 : pos + length + 1])
@@ -267,15 +252,11 @@ class ConfigureReporting(Message):
     reporting: t.Reporting
 
     @classmethod
-    def decode(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> "ConfigureReporting":
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ConfigureReporting":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
-        reporting = t.Reporting.decode(
-            data[pos + 1 : pos + 1 + t.Reporting.default_length()]
-        )
+        reporting = t.Reporting.decode(data[pos + 1 : pos + 1 + t.Reporting.default_length()])
         msg = ConfigureReporting(attribute_id=attribute_id, reporting=reporting)
         msg.crc = crc
         msg.length = length
@@ -292,9 +273,7 @@ class ConfigureReportingResponse(Message):
     msg_type = 0x94
 
     @classmethod
-    def decode(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> "ConfigureReportingResponse":
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ConfigureReportingResponse":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         msg = ConfigureReportingResponse()
         msg.crc = crc
@@ -323,9 +302,7 @@ class PeriodicRecording(Message):
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "PeriodicRecording":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
-        recording = t.Recording.decode(
-            data[pos + 0 : pos + t.Recording.default_length()]
-        )
+        recording = t.Recording.decode(data[pos + 0 : pos + t.Recording.default_length()])
         msg = PeriodicRecording(recording=recording)
         msg.crc = crc
         msg.length = length
@@ -354,9 +331,7 @@ class AttributeChanged(Message):
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
         value = a.decode_attribute(attribute_id, data[pos + 10 :])
-        msg = AttributeChanged(
-            changed_at=changed_at, attribute_id=attribute_id, value=value
-        )
+        msg = AttributeChanged(changed_at=changed_at, attribute_id=attribute_id, value=value)
         msg.crc = crc
         msg.length = length
         return msg
@@ -377,7 +352,7 @@ class AttributeChangedResponse(Message):
 class RawPulseChanged(Message):
     msg_type = 0x22
     changed_at: int
-    value: Union[t.PulseRawAll, t.PulseRaw]
+    value: t.PulseRawAll | t.PulseRaw
 
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "RawPulseChanged":
@@ -387,9 +362,7 @@ class RawPulseChanged(Message):
         (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
         # Determine if payload contains 1 or 3 PPGs
         if length - header_crc == t.PulseRawAll.default_length():
-            value = t.PulseRawAll.decode(
-                data[pos + 2 :]
-            )  # type: Union[t.PulseRawAll, t.PulseRaw]
+            value = t.PulseRawAll.decode(data[pos + 2 :])  # type: Union[t.PulseRawAll, t.PulseRaw]
         else:
             value = t.PulseRaw.decode(data[pos + 2 :])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
@@ -415,9 +388,7 @@ class RawPulseListChanged(Message):
     value: a.PulseRawListAttribute
 
     @classmethod
-    def decode(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> "RawPulseListChanged":
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "RawPulseListChanged":
         (crc, length) = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (attribute_id,) = struct.unpack(">B", data[pos : pos + 1])
@@ -443,10 +414,10 @@ class Alarm(Message):
     struct_format = ">QB"
     alarm_types = {0x01: "Low battery", 0x02: "Device off body", 0x03: "Device error"}
     msg_type = 0x31
-    changed_at: Optional[int]
-    alarm_type: Optional[int]
+    changed_at: int | None
+    alarm_type: int | None
 
-    def alarm_message(self) -> Optional[str]:
+    def alarm_message(self) -> str | None:
         if self.alarm_type is None:
             return None
         return self.alarm_types.get(self.alarm_type)
@@ -479,11 +450,7 @@ class ListFilesResponse(Message):
 
         if msg.length > 5:
             while pos + t.FileWithLength.default_length() <= msg.length - 1:
-                msg.files.append(
-                    t.FileWithLength.decode(
-                        data[pos : pos + t.FileWithLength.default_length()]
-                    )
-                )
+                msg.files.append(t.FileWithLength.decode(data[pos : pos + t.FileWithLength.default_length()]))
                 pos += t.FileWithLength.default_length()
         return msg
 
@@ -572,9 +539,7 @@ class SendFile(Message):
             data[pos + t.File.default_length() + 2 : pos + t.File.default_length() + 4],
         )
         payload = data[pos + t.File.default_length() + 4 : len(data) - 2]
-        msg = SendFile(
-            file_name=file_name, index=index, total_parts=total_parts, payload=payload
-        )
+        msg = SendFile(file_name=file_name, index=index, total_parts=total_parts, payload=payload)
         msg.crc = crc
         msg.length = length
         return msg
@@ -683,7 +648,7 @@ class ExecuteCommand(Message):
     command_id: int
     value: bytes
 
-    def command_message(self) -> Optional[str]:
+    def command_message(self) -> str | None:
         return self.command_types.get(self.command_id)
 
     @classmethod
@@ -749,9 +714,7 @@ class ExecuteCommandResponse(Message):
     value: bytes
 
     @classmethod
-    def decode(
-        cls, data: bytes, accept_crc_error: bool = False
-    ) -> "ExecuteCommandResponse":
+    def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ExecuteCommandResponse":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (response_code,) = struct.unpack(">B", data[pos + 0 : pos + 1])
@@ -884,8 +847,6 @@ def decode(data: bytes, accept_crc_error: bool = False) -> Message:
         raise e
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
-        raise DecodeError(
-            f"Error decoding message type {hex(message_type)}. Message payload: {hexdump}"
-        ) from e
+        raise DecodeError(f"Error decoding message type {hex(message_type)}. Message payload: {hexdump}") from e
 
     raise LookupError(f"Unknown message type {hex(message_type)}")

@@ -7,7 +7,6 @@ from embodycodec import attributes
 from embodycodec import codec
 from embodycodec import types
 from embodycodec.exceptions import CrcError
-from embodycodec.exceptions import DecodeError
 
 
 def test_decode_empty_buffer():
@@ -161,23 +160,16 @@ def test_encode_get_attribute() -> None:
 def test_get_attribute_response_current_time() -> None:
     do_test_get_attribute_response_and_return_decoded(
         attributes.CurrentTimeAttribute(
-            int(
-                datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp()
-                * 1000
-            )
+            int(datetime.fromisoformat("2022-04-20 00:05:25.283+00:00").timestamp() * 1000)
         ),
-        b"\x92\x00\x1a\x71\x00\x00\x01\x80\x44\x49\xb6\xd3"
-        b"\x00\x01\x02\x08\x00\x00\x01\x80\x44\x49\xbe\xa3"
-        b"\xdf\x03",
+        b"\x92\x00\x1a\x71\x00\x00\x01\x80\x44\x49\xb6\xd3\x00\x01\x02\x08\x00\x00\x01\x80\x44\x49\xbe\xa3\xdf\x03",
     )
 
 
 def test_get_attribute_response_serial_no() -> None:
     decoded = do_test_get_attribute_response_and_return_decoded(
         attributes.SerialNoAttribute(12345678),
-        b"\x92\x00\x1a\x01\x00\x00\x01\x80\x44\x49\xb6\xd3"
-        b"\x00\x01\x02\x08\x00\x00\x00\x00\x00\xbc\x61\x4e"
-        b"\xa5\x26",
+        b"\x92\x00\x1a\x01\x00\x00\x01\x80\x44\x49\xb6\xd3\x00\x01\x02\x08\x00\x00\x00\x00\x00\xbc\x61\x4e\xa5\x26",
     )
     assert decoded.value.value == 12345678
 
@@ -203,9 +195,7 @@ def test_reset_attribute_response() -> None:
 
 
 def test_configure_reporting() -> None:
-    response = codec.ConfigureReporting(
-        attribute_id=0x71, reporting=types.Reporting(interval=50, on_change=1)
-    )
+    response = codec.ConfigureReporting(attribute_id=0x71, reporting=types.Reporting(interval=50, on_change=1))
     encoded = response.encode()
     assert encoded == b"\x14\x00\x09\x71\x00\x32\x01\xe8\x18"
     decoded = codec.decode(encoded)
@@ -275,16 +265,12 @@ def test_periodic_recording_response() -> None:
 
 def test_attribute_changed() -> None:
     response = codec.AttributeChanged(
-        changed_at=int(
-            datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000
-        ),
+        changed_at=int(datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000),
         attribute_id=attributes.BatteryLevelAttribute.attribute_id,
         value=attributes.BatteryLevelAttribute(50),
     )
     encoded = response.encode()
-    assert (
-        encoded == b"\x21\x00\x10\x00\x00\x01\x80\x44\x49\xb6\xd3\xa1\x01\x32\x2f\x06"
-    )
+    assert encoded == b"\x21\x00\x10\x00\x00\x01\x80\x44\x49\xb6\xd3\xa1\x01\x32\x2f\x06"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.AttributeChanged)
     assert decoded.length == 16
@@ -302,9 +288,7 @@ def test_attribute_changed_response() -> None:
 
 
 def test_raw_pulse_changed_1_ppg() -> None:
-    response = codec.RawPulseChanged(
-        changed_at=1, value=types.PulseRaw(ecg=43214321, ppg=123456789)
-    )
+    response = codec.RawPulseChanged(changed_at=1, value=types.PulseRaw(ecg=43214321, ppg=123456789))
     encoded = response.encode()
     assert encoded == b'"\x00\x0f\x00\x01\x02\x93e\xf1\x07[\xcd\x15p\x84'
     decoded = codec.decode(encoded)
@@ -316,9 +300,7 @@ def test_raw_pulse_changed_1_ppg() -> None:
 def test_raw_pulse_changed_3_ppgs() -> None:
     response = codec.RawPulseChanged(
         changed_at=1,
-        value=types.PulseRawAll(
-            ecg=43214321, ppg_green=123456789, ppg_red=987654321, ppg_ir=432198765
-        ),
+        value=types.PulseRawAll(ecg=43214321, ppg_green=123456789, ppg_red=987654321, ppg_ir=432198765),
     )
     encoded = response.encode()
     assert encoded == bytes.fromhex("2200170001029365f1075bcd153ade68b119c2d46dcc8c")
@@ -354,9 +336,7 @@ def test_raw_pulse_list_changed() -> None:
         ),
     )
     encoded = response.encode()
-    assert encoded == bytes.fromhex(
-        "240019b64b03374e61bc00b17f39053041ab00cf9f4a054e53"
-    )
+    assert encoded == bytes.fromhex("240019b64b03374e61bc00b17f39053041ab00cf9f4a054e53")
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.RawPulseListChanged)
     assert decoded.length == 25
@@ -375,9 +355,7 @@ def test_raw_pulse_list_changed_response() -> None:
 
 def test_alarm() -> None:
     response = codec.Alarm(
-        changed_at=int(
-            datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000
-        ),
+        changed_at=int(datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000),
         alarm_type=1,
     )
     encoded = response.encode()
@@ -423,8 +401,7 @@ def test_list_files_response_one_file() -> None:
     response.files.append(types.FileWithLength(file_name="test1.bin", file_size=0))
     encoded = response.encode()
     assert (
-        encoded
-        == b"\xc1\x00\x23\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\xc1\x00\x23\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe5\xc4"
     )
     decoded = codec.decode(encoded)
@@ -564,8 +541,7 @@ def test_list_files_response_two_files() -> None:
     response.files.append(types.FileWithLength(file_name="test2.bin", file_size=0))
     encoded = response.encode()
     assert (
-        encoded
-        == b"\xc1\x00\x41\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\xc1\x00\x41\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x74\x65\x73\x74\x32\x2e\x62\x69\x6e\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf2\x2e"
     )
@@ -599,12 +575,8 @@ def test_decode_list_files_response_eight_files() -> None:
         b"\x2e\x6c\x6f\x67\x00\x00\x00\x00\x01\x2d\x6a\x5b\x83\xbc"
     )
     assert isinstance(decoded, codec.ListFilesResponse)
-    assert decoded.files[0] == types.FileWithLength(
-        file_name="220406_1238_000067.log", file_size=615523
-    )
-    assert decoded.files[1] == types.FileWithLength(
-        file_name="220406_1248_000068.log", file_size=294999
-    )
+    assert decoded.files[0] == types.FileWithLength(file_name="220406_1238_000067.log", file_size=615523)
+    assert decoded.files[1] == types.FileWithLength(file_name="220406_1248_000068.log", file_size=294999)
     assert decoded.length == 245
     assert len(decoded.files) == 8
 
@@ -613,8 +585,7 @@ def test_get_file() -> None:
     response = codec.GetFile(file=types.File(file_name="test1.bin"))
     encoded = response.encode()
     assert (
-        encoded
-        == b"\x42\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\x42\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\xd4\xf8"
     )
     assert (3 + 26 + 2) == len(encoded)
@@ -642,8 +613,7 @@ def test_send_file() -> None:
     )
     encoded = response.encode()
     assert (
-        encoded
-        == b"\x43\x00\x24\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\x43\x00\x24\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02\x01\x64\x6e"
     )
     decoded = codec.decode(encoded)
@@ -665,8 +635,7 @@ def test_delete_file() -> None:
     response = codec.DeleteFile(types.File("test1.bin"))
     encoded = response.encode()
     assert (
-        encoded
-        == b"\x44\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\x44\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\xd6\xee"
     )
     decoded = codec.decode(encoded)
@@ -688,8 +657,7 @@ def test_get_file_uart_file() -> None:
     response = codec.GetFileUart(types.File("test1.bin"))
     encoded = response.encode()
     assert (
-        encoded
-        == b"\x45\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00"
+        encoded == b"\x45\x00\x1f\x74\x65\x73\x74\x31\x2e\x62\x69\x6e\x00\x00\x00\x00\x00\x00\x00\x00"
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x26\x08"
     )
     decoded = codec.decode(encoded)
@@ -767,9 +735,7 @@ def test_execute_command_response() -> None:
 
 
 def test_get_attribute_response_model() -> None:
-    msg = codec.decode(
-        bytes.fromhex("92001c04000000def8b0c8490000000a4973656e736555204733475f")
-    )
+    msg = codec.decode(bytes.fromhex("92001c04000000def8b0c8490000000a4973656e736555204733475f"))
     assert isinstance(msg, codec.GetAttributeResponse)
     assert isinstance(msg.value, attributes.ModelAttribute)
     assert msg.value.formatted_value() == "IsenseU G3"
@@ -791,9 +757,7 @@ def test_get_attribute_response_afe_settings_all() -> None:
 
 def test_get_attribute_response_battery_diagnostics() -> None:
     msg = codec.decode(
-        bytes.fromhex(
-            "92002CBB000000def8e22fec000000180b35010000000200000003000400050006000700080009000A00ED2C"
-        )
+        bytes.fromhex("92002CBB000000def8e22fec000000180b35010000000200000003000400050006000700080009000A00ED2C")
     )
     assert isinstance(msg, codec.GetAttributeResponse)
     assert isinstance(msg.value, attributes.BatteryDiagnosticsAttribute)
@@ -801,14 +765,10 @@ def test_get_attribute_response_battery_diagnostics() -> None:
 
 
 # helper method for get_attribute_response tests
-def do_test_get_attribute_response_and_return_decoded(
-    attribute: attributes.Attribute, expected_encoded: bytes
-):
+def do_test_get_attribute_response_and_return_decoded(attribute: attributes.Attribute, expected_encoded: bytes):
     get_attribute_response = codec.GetAttributeResponse(
         attribute_id=attribute.attribute_id,
-        changed_at=int(
-            datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000
-        ),
+        changed_at=int(datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000),
         reporting=types.Reporting(interval=1, on_change=2),
         value=attribute,
     )
