@@ -10,7 +10,7 @@ import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import TypeVar, Union
 
 from embodycodec import attributes as a
 from embodycodec import types as t
