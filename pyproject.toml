@@ -1,6 +1,6 @@
 [project]
 name = "embody-codec"
-version = "1.0.32"
+version = "1.0.33"
 description = "Embody Codec"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
