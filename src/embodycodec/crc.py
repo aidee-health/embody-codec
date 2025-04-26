@@ -1,7 +1,6 @@
 """CRC Utility method(s) used by the embodycodec to generate CRC footers."""
 
 from collections.abc import ByteString
-from typing import Optional
 
 
 # fmt: off
@@ -26,9 +25,7 @@ table = [
 # fmt: on
 
 
-def crc16(
-    data: ByteString, existing_crc: Optional[int] = None, poly: int = 0x1021
-) -> int:
+def crc16(data: ByteString, existing_crc: int | None = None, poly: int = 0x1021) -> int:
     """Calculate the CRC16 of the given data (bytearray,bytes or memoryview)."""
     crc = existing_crc if existing_crc else 0xFFFF
     for byte in data:

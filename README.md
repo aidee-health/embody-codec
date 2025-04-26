@@ -28,7 +28,7 @@ This is a Python based implementation library for the Aidee EmBody communication
 ## Requirements
 
 - This library does not require any external libraries
-- Requires Python 3.8+
+- Requires Python 3.11+
 
 # Installing package with pip from github
 
@@ -53,11 +53,10 @@ please [file an issue] along with a detailed description.
 
 ## Credits
 
-This project was originally generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter] template.
+Inspiration collected from [Cookiecutter UV] template.
 
-[@cjolowicz]: https://github.com/cjolowicz
 [pypi]: https://pypi.org/
-[hypermodern python cookiecutter]: https://github.com/cjolowicz/cookiecutter-hypermodern-python
+[Cookiecutter UV]: https://github.com/fpgmaas/cookiecutter-uv
 [file an issue]: https://github.com/espenwest/hypermodern-python/issues
 [pip]: https://pip.pypa.io/
 

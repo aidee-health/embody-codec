@@ -9,10 +9,8 @@ from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
 from datetime import datetime
-from datetime import timezone
+from datetime import UTC
 from typing import Any
-from typing import Optional
-from typing import Type
 from typing import TypeVar
 
 from embodycodec import types as t
@@ -28,7 +26,7 @@ class Attribute(ABC):
     struct_format = ""
     """struct format used to pack/unpack object - must be set by subclasses"""
 
-    attribute_id = int(-1)
+    attribute_id = -1
     """attribute id field - must be set by subclasses"""
 
     value: Any
@@ -51,7 +49,7 @@ class Attribute(ABC):
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, *astuple(self))
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return str(self.value)
 
 
@@ -69,7 +67,7 @@ class ZeroTerminatedStringAttribute(Attribute, ABC):
     def encode(self) -> bytes:
         return bytes(self.value, "ascii")
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return self.value
 
 
@@ -91,7 +89,7 @@ class ComplexTypeAttribute(Attribute, ABC):
     def encode(self) -> bytes:
         return self.value.encode()
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return str(self.value)
 
 
@@ -101,12 +99,8 @@ class SerialNoAttribute(Attribute):
     attribute_id = 0x01
     value: int
 
-    def formatted_value(self) -> Optional[str]:
-        return (
-            self.value.to_bytes(8, "big", signed=True).hex().upper()
-            if self.value
-            else None
-        )
+    def formatted_value(self) -> str | None:
+        return self.value.to_bytes(8, "big", signed=True).hex().upper() if self.value else None
 
 
 @dataclass
@@ -121,9 +115,7 @@ class FirmwareVersionAttribute(Attribute):
                 f"FirmwareVersionAttribute buffer too short for message. \
                                 Received {len(data)} bytes, expected {cls.length()} bytes"
             )
-        return FirmwareVersionAttribute(
-            int.from_bytes(data[0:3], byteorder="big", signed=False)
-        )
+        return FirmwareVersionAttribute(int.from_bytes(data[0:3], byteorder="big", signed=False))
 
     def encode(self) -> bytes:
         return int.to_bytes(self.value, length=3, byteorder="big", signed=True)
@@ -132,7 +124,7 @@ class FirmwareVersionAttribute(Attribute):
     def length(cls) -> int:
         return 3
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True)
         return ".".join(str(newval[i]).zfill(2) for i in range(0, len(newval), 1))
 
@@ -143,7 +135,7 @@ class BluetoothMacAttribute(Attribute):
     attribute_id = 0x03
     value: int
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return self.value.to_bytes(8, "big", signed=True).hex() if self.value else None
 
 
@@ -173,7 +165,6 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
     @classmethod
     def decode(cls, data: bytes) -> "AfeSettingsAllAttribute":
         """Special handling. certain versions of the device returns an empty attribute value."""
-
         if len(data) == 0:
             return AfeSettingsAllAttribute(
                 value=t.AfeSettingsAll(
@@ -201,9 +192,9 @@ class CurrentTimeAttribute(Attribute):
     value: int
 
     def get_datetime(self) -> datetime:
-        return datetime.fromtimestamp(self.value / 1000, tz=timezone.utc)
+        return datetime.fromtimestamp(self.value / 1000, tz=UTC)
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return self.get_datetime().replace(microsecond=0).isoformat()
 
 
@@ -363,7 +354,7 @@ class TemperatureAttribute(Attribute):
     def temp_celsius(self) -> float:
         return self.value * 0.0078125
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         return str(self.temp_celsius())
 
 
@@ -427,7 +418,7 @@ class LedsAttribute(Attribute):
     def led3_blinking(self) -> bool:
         return bool(self.value & 0b100000)
 
-    def formatted_value(self) -> Optional[str]:
+    def formatted_value(self) -> str | None:
         if not self.value:
             return None
         return (
@@ -437,13 +428,12 @@ class LedsAttribute(Attribute):
         )
 
 
-def decode_executive_command_response(attribute_id, data: bytes) -> Optional[Attribute]:
+def decode_executive_command_response(attribute_id, data: bytes) -> Attribute | None:
     """Decodes a bytes object into proper attribute object.
 
     Raises BufferError if data buffer is too short. Returns None if unknown attribute
     Raises LookupError if unknown message type.
     """
-
     if attribute_id == ExecuteCommandResponseAfeReadAllRegsAttribute.attribute_id:
         return ExecuteCommandResponseAfeReadAllRegsAttribute.decode(data)
 
@@ -456,7 +446,6 @@ def decode_attribute(attribute_id, data: bytes) -> Attribute:
     Raises BufferError if data buffer is too short.
     Raises LookupError if unknown message type.
     """
-
     if attribute_id == SerialNoAttribute.attribute_id:
         return SerialNoAttribute.decode(data)
     if attribute_id == FirmwareVersionAttribute.attribute_id:

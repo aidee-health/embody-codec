@@ -7,8 +7,6 @@ provides access methods for parsing one and one message from a bytes object.
 
 import struct
 from dataclasses import dataclass
-from dataclasses import field
-from typing import Optional
 
 
 @dataclass
@@ -17,19 +15,17 @@ class ProtocolMessage:
     unpack_format = ""
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return struct.calcsize(cls.unpack_format)
 
-    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+    def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.__class__.default_length(version)
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
-        return cls(
-            *(struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)]))
-        )
+        return cls(*(struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)])))
 
 
 @dataclass
@@ -37,7 +33,7 @@ class TimetickedMessage(ProtocolMessage):
     two_lsb_of_timestamp = None  # Dataclass workaround. Not specified with type to avoid having it as a dataclass field
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         tuples = struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)])
@@ -110,11 +106,11 @@ class PpgRaw(TimetickedMessage):
     ppg: int
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return 8
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
@@ -133,11 +129,11 @@ class PpgRawAll(TimetickedMessage):
     ppg_ir: int
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return 11
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="big", signed=False)
@@ -238,49 +234,33 @@ class PulseRawList(TimetickedMessage):
     len: int = 6  # actual length, since this is instance specific, not static
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 6
 
-    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+    def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.len
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < 3:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
-        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(
-            format_and_sizes
-        )
+        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
         ecgs = []
         ppgs = []
-        bytes_per_ecg_and_ppg = (
-            1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
-        )
-        length = (
-            3
-            + (no_of_ecgs * bytes_per_ecg_and_ppg)
-            + (no_of_ppgs * bytes_per_ecg_and_ppg)
-        )
+        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        length = 3 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
         if len(data) < length:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected {length} bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {length} bytes")
         pos = 3
         for _ in range(no_of_ecgs):
-            ecg = int.from_bytes(
-                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
-            )
+            ecg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
             ecgs.append(ecg)
             pos += bytes_per_ecg_and_ppg
         for _ in range(no_of_ppgs):
-            ppg = int.from_bytes(
-                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
-            )
+            ppg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
             ppgs.append(ppg)
             pos += bytes_per_ecg_and_ppg
         msg = PulseRawList(
@@ -311,37 +291,29 @@ class PulseBlockEcg(TimetickedMessage):
     pkg_length: int
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 14
 
-    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+    def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.pkg_length
 
     @classmethod
-    def decode(
-        cls, data: bytes, version: Optional[tuple[int, int, int]] = None
-    ) -> "PulseBlockEcg":
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockEcg":
         if len(data) < 14:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
         channel = data[0]
         packed_ecgs = data[1]
         pkg_length = 1 + 1 + 8 + 4 + (packed_ecgs * 2)
         if len(data) < pkg_length:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
         pos = 14
         for _ in range(packed_ecgs):
-            sample = ref + int.from_bytes(
-                data[pos : pos + 2], byteorder="little", signed=True
-            )
+            sample = ref + int.from_bytes(data[pos : pos + 2], byteorder="little", signed=True)
             samples.append(sample)
             pos += 2
         msg = PulseBlockEcg(
@@ -367,37 +339,29 @@ class PulseBlockPpg(TimetickedMessage):
     pkg_length: int
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 14
 
-    def length(self, version: Optional[tuple[int, int, int]] = None) -> int:
+    def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.pkg_length
 
     @classmethod
-    def decode(
-        cls, data: bytes, version: Optional[tuple[int, int, int]] = None
-    ) -> "PulseBlockPpg":
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockPpg":
         if len(data) < 13:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
         channel = data[0]
         packed_ppgs = data[1]
         pkg_length = 1 + 1 + 8 + 4 + (packed_ppgs * 2)
         if len(data) < pkg_length:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
         pos = 14
         for _ in range(packed_ppgs):
-            sample = ref + int.from_bytes(
-                data[pos : pos + 2], byteorder="little", signed=True
-            )
+            sample = ref + int.from_bytes(data[pos : pos + 2], byteorder="little", signed=True)
             samples.append(sample)
             pos += 2
         msg = PulseBlockPpg(
@@ -426,17 +390,15 @@ class BatteryDiagnostics(TimetickedMessage):
     full_cap: int
     # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
     rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
-    repsoc: (
-        int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
-    )
+    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
     @classmethod
-    def default_length(cls, version: Optional[tuple[int, int, int]] = None) -> int:
+    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return struct.calcsize(cls.struct_format)
 
     @classmethod
-    def decode(cls, data: bytes, version: Optional[tuple[int, int, int]] = None):
+    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
             raise BufferError("Buffer too short for message")
         ts_lsb = int.from_bytes(data[0:2], byteorder="little", signed=False)
@@ -450,14 +412,11 @@ class BatteryDiagnostics(TimetickedMessage):
         return msg
 
 
-def decode_message(
-    data: bytes, version: Optional[tuple[int, int, int]] = None
-) -> ProtocolMessage:
+def decode_message(data: bytes, version: tuple[int, int, int] | None = None) -> ProtocolMessage:
     """Decodes a bytes object into proper subclass of ProtocolMessage.
 
     raises LookupError if unknown message type.
     """
-
     message_type = data[0]
     if message_type == 0x01:
         return Header.decode(data[1:], version)

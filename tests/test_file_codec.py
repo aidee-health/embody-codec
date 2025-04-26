@@ -5,9 +5,7 @@ from embodycodec import file_codec as codec
 
 def test_decode_header() -> None:
     assert 21 == codec.Header.default_length()
-    header = codec.Header.decode(
-        bytes.fromhex("65c6fa2569b1633302040106710000017e5353729d")
-    )
+    header = codec.Header.decode(bytes.fromhex("65c6fa2569b1633302040106710000017e5353729d"))
     assert b"\x02" == header.fw_att
     assert b"\x04\x01\x06" == header.firmware_version
     assert (4, 1, 6) == tuple(header.firmware_version)
@@ -29,9 +27,7 @@ def test_decode_afe_settings_old() -> None:
 
 def test_decode_afe_settings() -> None:
     assert 22 == codec.AfeSettings.default_length()
-    afe_settings = codec.AfeSettings.decode(
-        bytes.fromhex("0002050204000000184900001849fff8ef66424f20d7")
-    )
+    afe_settings = codec.AfeSettings.decode(bytes.fromhex("0002050204000000184900001849fff8ef66424f20d7"))
     assert 2 == afe_settings.two_lsb_of_timestamp
     assert 4 == afe_settings.ecg_gain
     assert 0 == afe_settings.ioffdac_range
@@ -45,9 +41,7 @@ def test_decode_afe_settings() -> None:
 def test_decode_afe_settings_all() -> None:
     assert 38 == codec.AfeSettingsAll.default_length()
     afe_settings = codec.AfeSettingsAll.decode(
-        bytes.fromhex(
-            "00020502040000001849000018490000184900001849fff8ef64fff8ef65fff8ef66424f20d7"
-        )
+        bytes.fromhex("00020502040000001849000018490000184900001849fff8ef64fff8ef65fff8ef66424f20d7")
     )
     assert 2 == afe_settings.two_lsb_of_timestamp
     assert 5 == afe_settings.rf_gain
@@ -172,9 +166,7 @@ def test_temperature() -> None:
 
 
 def test_decode_pulse_raw_list() -> None:
-    ppg_raw = codec.PulseRawList.decode(
-        b"K\x037\x01\x00\x00\x00\xe8\x03\x00\x00d\x00\x00\x00\x05\x00\x00\x00"
-    )
+    ppg_raw = codec.PulseRawList.decode(b"K\x037\x01\x00\x00\x00\xe8\x03\x00\x00d\x00\x00\x00\x05\x00\x00\x00")
     assert 843 == ppg_raw.two_lsb_of_timestamp
     assert 1 == ppg_raw.ecgs[0]
     assert 1000 == ppg_raw.ppgs[0]
@@ -184,9 +176,7 @@ def test_decode_pulse_raw_list() -> None:
 
 
 def test_decode_pulse_raw_list2() -> None:
-    ppg_raw = codec.PulseRawList.decode(
-        bytes.fromhex("0b354794dafffffb674100d42d8e00bc0fe900fb7cb400")
-    )
+    ppg_raw = codec.PulseRawList.decode(bytes.fromhex("0b354794dafffffb674100d42d8e00bc0fe900fb7cb400"))
     assert 13579 == ppg_raw.two_lsb_of_timestamp
     assert 1 == ppg_raw.no_of_ecgs
     assert 4 == ppg_raw.no_of_ppgs
@@ -211,9 +201,7 @@ def test_convert_pulse_raw_list_format_from_complex_byte() -> None:
 
 
 def test_decode_battery_diagnostics() -> None:
-    diag = codec.BatteryDiagnostics.decode(
-        bytes.fromhex("0b35010000000200000003000400050006000700080009000A00")
-    )
+    diag = codec.BatteryDiagnostics.decode(bytes.fromhex("0b35010000000200000003000400050006000700080009000A00"))
     assert 13579 == diag.two_lsb_of_timestamp
     assert 1 == diag.ttf
     assert 2 == diag.tte
@@ -228,9 +216,7 @@ def test_decode_battery_diagnostics() -> None:
 
 
 def test_decode_generic_message() -> None:
-    msg = codec.decode_message(
-        bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00")
-    )
+    msg = codec.decode_message(bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00"))
     assert isinstance(msg, codec.BatteryDiagnostics)
     assert 24 == msg.length()
     assert 24 == codec.BatteryDiagnostics.default_length()

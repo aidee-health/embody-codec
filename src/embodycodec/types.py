@@ -5,10 +5,7 @@ import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
-from typing import Optional
-from typing import Type
 from typing import TypeVar
-from typing import Union
 
 
 class ExecuteCommandType(enum.Enum):
@@ -97,7 +94,7 @@ class PulseRawList(ComplexType):
     no_of_ppgs: int
     ecgs: list[int]
     ppgs: list[int]
-    len = int(0)
+    len = 0
 
     def length(self) -> int:
         return self.len
@@ -105,30 +102,20 @@ class PulseRawList(ComplexType):
     @classmethod
     def decode(cls, data: bytes) -> "PulseRawList":
         if len(data) < 10:
-            raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes"
-            )
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
-        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(
-            format_and_sizes
-        )
+        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
         ecgs = []
         ppgs = []
-        bytes_per_ecg_and_ppg = (
-            1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
-        )
+        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
         pos = 3
         for _ in range(no_of_ecgs):
-            ecg = int.from_bytes(
-                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
-            )
+            ecg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
             ecgs.append(ecg)
             pos += bytes_per_ecg_and_ppg
         for _ in range(no_of_ppgs):
-            ppg = int.from_bytes(
-                data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True
-            )
+            ppg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
             ppgs.append(ppg)
             pos += bytes_per_ecg_and_ppg
         msg = PulseRawList(
@@ -139,22 +126,12 @@ class PulseRawList(ComplexType):
             ecgs=ecgs,
             ppgs=ppgs,
         )
-        msg.len = (
-            1
-            + (no_of_ecgs * bytes_per_ecg_and_ppg)
-            + (no_of_ppgs * bytes_per_ecg_and_ppg)
-        )
+        msg.len = 1 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
         return msg
 
     def encode(self) -> bytes:
-        format_and_length = PulseRawList.from_format_and_lengths(
-            self.format, self.no_of_ecgs, self.no_of_ppgs
-        )
-        bytes_per_ecg_and_ppg = (
-            1
-            if self.format == 0
-            else 2 if self.format == 1 else 3 if self.format == 2 else 4
-        )
+        format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
+        bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
         payload = struct.pack("<H", self.tick)
         payload += struct.pack("<B", format_and_length)
         for element in range(self.no_of_ecgs):
@@ -267,9 +244,7 @@ class BatteryDiagnostics(ComplexType):
     full_cap: int
     # mAh *100 (0-655.35 mAh) Total battery capacity calculated after each cycle
     rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
-    repsoc: (
-        int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
-    )
+    repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
     def to_str(self):
@@ -299,18 +274,18 @@ class AfeSettings(ComplexType):
 @dataclass
 class AfeSettingsAll(ComplexType):
     struct_format = ">BBBBIIIIiiif"
-    rf_gain: Optional[int]
-    cf_value: Optional[int]
-    ecg_gain: Optional[int]
-    ioffdac_range: Optional[int]
-    led1: Optional[int]
-    led2: Optional[int]
-    led3: Optional[int]
-    led4: Optional[int]
-    off_dac1: Optional[int]
-    off_dac2: Optional[int]
-    off_dac3: Optional[int]
-    relative_gain: Optional[float]
+    rf_gain: int | None
+    cf_value: int | None
+    ecg_gain: int | None
+    ioffdac_range: int | None
+    led1: int | None
+    led2: int | None
+    led3: int | None
+    led4: int | None
+    off_dac1: int | None
+    off_dac2: int | None
+    off_dac3: int | None
+    relative_gain: float | None
 
 
 F = TypeVar("F", bound="File")
@@ -319,7 +294,7 @@ F = TypeVar("F", bound="File")
 @dataclass
 class File(ComplexType):
     struct_format = ">26s"
-    file_name: Union[str, bytes]
+    file_name: str | bytes
 
     @classmethod
     def decode(cls: type[F], data: bytes) -> F:
@@ -338,6 +313,4 @@ class FileWithLength(File):
     file_size: int
 
     def encode(self) -> bytes:
-        return struct.pack(
-            self.struct_format, str(self.file_name).encode("utf-8"), self.file_size
-        )
+        return struct.pack(self.struct_format, str(self.file_name).encode("utf-8"), self.file_size)

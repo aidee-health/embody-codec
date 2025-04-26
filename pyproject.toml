@@ -1,45 +1,36 @@
-[tool.poetry]
+[project]
 name = "embody-codec"
 version = "1.0.32"
 description = "Embody Codec"
-authors = ["Aidee Health AS <hello@aidee.io>"]
+authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/aidee-health/embody-codec"
-repository = "https://github.com/aidee-health/embody-codec"
-packages = [
-    { include = "embodycodec", from = "src" },
-]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-]
+requires-python = ">=3.11,<4.0"
+classifiers = ["Development Status :: 5 - Production/Stable"]
 
-[tool.poetry.urls]
+[project.urls]
 Changelog = "https://github.com/aidee-health/embody-codec/releases"
+Homepage = "https://github.com/aidee-health/embody-codec"
+Repository = "https://github.com/aidee-health/embody-codec"
 
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
 
-[tool.poetry.group.dev.dependencies]
-black = ">=21.10b0"
-coverage = {extras = ["toml"], version = ">=6.2"}
-darglint = ">=1.8.1"
-flake8 = ">=7.0.0" # Espen: pre-commit run --all-files --hook-stage=manual --show-diff-on-failure fails with 5.0
-flake8-bandit = ">=2.1.2"
-flake8-bugbear = ">=21.9.2"
-flake8-docstrings = ">=1.6.0"
-flake8-rst-docstrings = ">=0.2.5"
-isort = ">=5.10.1"
-mypy = ">=0.930"
-pep8-naming = ">=0.12.1"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-pytest = ">=6.2.5"
-pyupgrade = ">=2.29.1"
-typeguard = ">=2.13.3"
+[dependency-groups]
+dev = [
+    "pytest>=7.2.0",
+    "ruff>=0.11.5",
+    "mypy>=0.930",
+    "pre-commit>=2.16.0",
+    "pre-commit-hooks>=4.1.0",
+]
 
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.8"
+[tool.hatch.build.targets.sdist]
+include = ["src/embodycodec"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/embodycodec"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/embodycodec" = "embodycodec"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -51,7 +42,7 @@ source = ["embodycodec", "tests"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 5 # Increase once we have refactored and added tests
+fail_under = 2
 
 [tool.isort]
 profile = "black"
@@ -67,6 +58,59 @@ show_error_codes = true
 show_error_context = true
 ignore_missing_imports = true
 
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "B",    # flake8-bugbear
+    "C",    # flake8-comprehensions
+    "D",    # pydocstyle
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "N",    # pep8-naming
+    "S",    # flake8-bandit
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "RUF",  # Ruff-specific rules
+    "PTH",  # use pathlib
+    "PL",   # Pylint
+]
+ignore = [
+    "E203",   # Whitespace before ':'
+    "E501",   # Line too long
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "D107",   # Missing docstring in __init__
+    "D415",   # First line should end with a period, question mark, or exclamation point
+    "D102",   # Missing docstring in public method
+    "S101",   # Use of assert detected
+    "D105",   # Missing docstring in magic method
+    "D103",   # Missing docstring in public function
+    "D101",   # Missing docstring in public class
+    "B024",   # Abstract class with no abstract methods
+    "B905",   # zip() without an explicit strict= parameter
+    "F401",   # Unused imports
+    "PLR2004", # Magic value used in comparison
+    "I001",   # isort: skip
+    "PTH123", # pathlib: skip
+    "RUF012", # mutable-class-default
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+]
+unfixable = [
+    "F401", # Unused imports - used in mypy type hints
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 50
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
