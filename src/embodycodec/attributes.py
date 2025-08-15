@@ -2,6 +2,9 @@
 
 All attribute types inherits from the Attribute class, and provides self-contained encoding and decoding of
 attributes.
+
+This module uses a dictionary-based registry pattern (_ATTRIBUTE_REGISTRY) for O(1) attribute type lookups.
+Temperature conversions use the TEMPERATURE_SCALE_FACTOR constant (0.0078125 = 1/128).
 """
 
 import struct
@@ -14,6 +17,10 @@ from typing import Any
 from typing import TypeVar
 
 from embodycodec import types as t
+
+# Temperature sensor conversion factor (degrees Celsius per raw unit)
+# This factor converts raw sensor values to degrees Celsius
+TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
 
 
 T = TypeVar("T", bound="Attribute")
@@ -352,7 +359,7 @@ class TemperatureAttribute(Attribute):
     value: int
 
     def temp_celsius(self) -> float:
-        return self.value * 0.0078125
+        return self.value * TEMPERATURE_SCALE_FACTOR
 
     def formatted_value(self) -> str | None:
         return str(self.temp_celsius())
@@ -440,80 +447,53 @@ def decode_executive_command_response(attribute_id, data: bytes) -> Attribute | 
     return None
 
 
+# Attribute registry for efficient O(1) lookup
+_ATTRIBUTE_REGISTRY: dict[int, type[Attribute]] = {
+    0x01: SerialNoAttribute,
+    0x02: FirmwareVersionAttribute,
+    0x03: BluetoothMacAttribute,
+    0x04: ModelAttribute,
+    0x05: VendorAttribute,
+    0x06: AfeSettingsAttribute,
+    0x07: AfeSettingsAllAttribute,
+    0x71: CurrentTimeAttribute,
+    0x72: MeasurementDeactivatedAttribute,
+    0x73: TraceLevelAttribute,
+    0x74: NoOfPpgValuesAttribute,
+    0x75: DisableAutoRecAttribute,
+    0x76: OnBodyDetectAttribute,
+    0xA1: BatteryLevelAttribute,
+    0xA2: PulseRawAllAttribute,
+    0xA3: BloodPressureAttribute,
+    0xA4: ImuAttribute,
+    0xA5: HeartrateAttribute,
+    0xA6: SleepModeAttribute,
+    0xA7: BreathRateAttribute,
+    0xA8: HeartRateVariabilityAttribute,
+    0xA9: ChargeStateAttribute,
+    0xAA: BeltOnBodyStateAttribute,
+    0xAB: FirmwareUpdateProgressAttribute,
+    0xAC: ImuRawAttribute,
+    0xAD: HeartRateIntervalAttribute,
+    0xB1: PulseRawAttribute,
+    0xB2: AccRawAttribute,
+    0xB3: GyroRawAttribute,
+    0xB4: TemperatureAttribute,
+    0xB5: DiagnosticsAttribute,
+    0xB6: PulseRawListAttribute,
+    0xB7: FlashInfoAttribute,
+    0xBB: BatteryDiagnosticsAttribute,
+    0xC2: LedsAttribute,
+}
+
+
 def decode_attribute(attribute_id, data: bytes) -> Attribute:
     """Decodes a bytes object into proper attribute object.
 
     Raises BufferError if data buffer is too short.
     Raises LookupError if unknown message type.
     """
-    if attribute_id == SerialNoAttribute.attribute_id:
-        return SerialNoAttribute.decode(data)
-    if attribute_id == FirmwareVersionAttribute.attribute_id:
-        return FirmwareVersionAttribute.decode(data)
-    if attribute_id == BluetoothMacAttribute.attribute_id:
-        return BluetoothMacAttribute.decode(data)
-    if attribute_id == ModelAttribute.attribute_id:
-        return ModelAttribute.decode(data)
-    if attribute_id == VendorAttribute.attribute_id:
-        return VendorAttribute.decode(data)
-    if attribute_id == AfeSettingsAttribute.attribute_id:
-        return AfeSettingsAttribute.decode(data)
-    if attribute_id == AfeSettingsAllAttribute.attribute_id:
-        return AfeSettingsAllAttribute.decode(data)
-    if attribute_id == CurrentTimeAttribute.attribute_id:
-        return CurrentTimeAttribute.decode(data)
-    if attribute_id == MeasurementDeactivatedAttribute.attribute_id:
-        return MeasurementDeactivatedAttribute.decode(data)
-    if attribute_id == TraceLevelAttribute.attribute_id:
-        return TraceLevelAttribute.decode(data)
-    if attribute_id == NoOfPpgValuesAttribute.attribute_id:
-        return NoOfPpgValuesAttribute.decode(data)
-    if attribute_id == DisableAutoRecAttribute.attribute_id:
-        return DisableAutoRecAttribute.decode(data)
-    if attribute_id == BatteryLevelAttribute.attribute_id:
-        return BatteryLevelAttribute.decode(data)
-    if attribute_id == PulseRawAllAttribute.attribute_id:
-        return PulseRawAllAttribute.decode(data)
-    if attribute_id == BloodPressureAttribute.attribute_id:
-        return BloodPressureAttribute.decode(data)
-    if attribute_id == ImuAttribute.attribute_id:
-        return ImuAttribute.decode(data)
-    if attribute_id == HeartrateAttribute.attribute_id:
-        return HeartrateAttribute.decode(data)
-    if attribute_id == SleepModeAttribute.attribute_id:
-        return SleepModeAttribute.decode(data)
-    if attribute_id == BreathRateAttribute.attribute_id:
-        return BreathRateAttribute.decode(data)
-    if attribute_id == HeartRateVariabilityAttribute.attribute_id:
-        return HeartRateVariabilityAttribute.decode(data)
-    if attribute_id == ChargeStateAttribute.attribute_id:
-        return ChargeStateAttribute.decode(data)
-    if attribute_id == BeltOnBodyStateAttribute.attribute_id:
-        return BeltOnBodyStateAttribute.decode(data)
-    if attribute_id == FirmwareUpdateProgressAttribute.attribute_id:
-        return FirmwareUpdateProgressAttribute.decode(data)
-    if attribute_id == ImuRawAttribute.attribute_id:
-        return ImuRawAttribute.decode(data)
-    if attribute_id == HeartRateIntervalAttribute.attribute_id:
-        return HeartRateIntervalAttribute.decode(data)
-    if attribute_id == PulseRawAttribute.attribute_id:
-        return PulseRawAttribute.decode(data)
-    if attribute_id == AccRawAttribute.attribute_id:
-        return AccRawAttribute.decode(data)
-    if attribute_id == GyroRawAttribute.attribute_id:
-        return GyroRawAttribute.decode(data)
-    if attribute_id == TemperatureAttribute.attribute_id:
-        return TemperatureAttribute.decode(data)
-    if attribute_id == DiagnosticsAttribute.attribute_id:
-        return DiagnosticsAttribute.decode(data)
-    if attribute_id == PulseRawListAttribute.attribute_id:
-        return PulseRawListAttribute.decode(data)
-    if attribute_id == FlashInfoAttribute.attribute_id:
-        return FlashInfoAttribute.decode(data)
-    if attribute_id == BatteryDiagnosticsAttribute.attribute_id:
-        return BatteryDiagnosticsAttribute.decode(data)
-    if attribute_id == LedsAttribute.attribute_id:
-        return LedsAttribute.decode(data)
-    if attribute_id == OnBodyDetectAttribute.attribute_id:
-        return OnBodyDetectAttribute.decode(data)
-    raise LookupError(f"Unknown attribute type {attribute_id}")
+    attribute_class = _ATTRIBUTE_REGISTRY.get(attribute_id)
+    if attribute_class is None:
+        raise LookupError(f"Unknown attribute type {attribute_id}")
+    return attribute_class.decode(data)

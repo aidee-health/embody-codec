@@ -1,4 +1,8 @@
-"""CRC Utility method(s) used by the embodycodec to generate CRC footers."""
+"""CRC Utility method(s) used by the embodycodec to generate CRC footers.
+
+This module provides CRC16 calculation using a pre-computed lookup table for optimal performance.
+The poly parameter has been removed as the implementation uses a fixed polynomial (0x1021).
+"""
 
 from collections.abc import ByteString
 
@@ -25,9 +29,9 @@ table = [
 # fmt: on
 
 
-def crc16(data: ByteString, existing_crc: int | None = None, poly: int = 0x1021) -> int:
+def crc16(data: ByteString, existing_crc: int | None = None) -> int:
     """Calculate the CRC16 of the given data (bytearray,bytes or memoryview)."""
-    crc = existing_crc if existing_crc else 0xFFFF
+    crc = existing_crc if existing_crc is not None else 0xFFFF
     for byte in data:
         crc = (crc << 8) ^ table[(crc >> 8) ^ byte]
         crc &= 0xFFFF  # important, crc must stay 16bits all the way through
