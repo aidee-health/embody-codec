@@ -134,3 +134,7 @@ dmypy.json
 # Visual Studio Code
 .vscode/
 *.code-workspace
+
+# LLM tools
+.claude/
+CLAUDE.md
