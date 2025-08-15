@@ -3,6 +3,9 @@
 This class separates out the parsing of different message types from the EmBody device's file format. The first part
 consists of all the different messages wrapped as subclasses of the ProtocolMessage dataclass. The bottom part
 provides access methods for parsing one and one message from a bytes object.
+
+This module uses a dictionary-based registry pattern (_FILE_MESSAGE_REGISTRY) for O(1) message type lookups.
+Temperature conversions use the TEMPERATURE_SCALE_FACTOR constant (0.0078125 = 1/128).
 """
 
 import struct

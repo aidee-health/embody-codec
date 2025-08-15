@@ -1,4 +1,8 @@
-"""CRC Utility method(s) used by the embodycodec to generate CRC footers."""
+"""CRC Utility method(s) used by the embodycodec to generate CRC footers.
+
+This module provides CRC16 calculation using a pre-computed lookup table for optimal performance.
+The poly parameter has been removed as the implementation uses a fixed polynomial (0x1021).
+"""
 
 from collections.abc import ByteString
 

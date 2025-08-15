@@ -2,6 +2,9 @@
 
 All attribute types inherits from the Attribute class, and provides self-contained encoding and decoding of
 attributes.
+
+This module uses a dictionary-based registry pattern (_ATTRIBUTE_REGISTRY) for O(1) attribute type lookups.
+Temperature conversions use the TEMPERATURE_SCALE_FACTOR constant (0.0078125 = 1/128).
 """
 
 import struct

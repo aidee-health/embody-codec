@@ -4,6 +4,9 @@ A full embodycodec for the protocol specified for the EmBody device
 
 All protocol message types inherits from the Message class, and provides self-contained encoding and decoding of
 messages.
+
+This module uses a dictionary-based registry pattern (_MESSAGE_REGISTRY) for O(1) message type lookups,
+providing significant performance improvements over linear searches.
 """
 
 import struct
