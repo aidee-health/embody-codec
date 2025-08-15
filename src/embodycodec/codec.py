@@ -141,8 +141,8 @@ class NackResponse(Message):
         0x01: "Unknown message type",
         0x02: "Unknown message content",
         0x03: "Unknown attribute",
-        0x04: "Message to short",
-        0x05: "Message to long",
+        0x04: "Message too short",
+        0x05: "Message too long",
         0x06: "Message with illegal CRC",
         0x07: "Message buffer full",
         0x08: "File system error",
@@ -656,7 +656,8 @@ class ExecuteCommand(Message):
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (command_id,) = struct.unpack(">B", data[pos + 0 : pos + 1])
-        value = data
+        # Extract only the payload bytes after command_id, excluding CRC
+        value = data[pos + 1 : length - cls.crc_len] if length > pos + 1 + cls.crc_len else b""
         msg = ExecuteCommand(command_id=command_id, value=value)
         msg.crc = crc
         msg.length = length
@@ -669,39 +670,41 @@ class ExecuteCommand(Message):
 
         if self.command_id == t.ExecuteCommandType.FORCE_ON_BODY.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_USB_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_BLE_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_BATTERY_LEVEL.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value)
+            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
             attribute_part = struct.pack(">B", self.command_id)
-            address_part = struct.pack(">B", self.value[0])
-            value_part = struct.pack(">I", self.value)
-            return attribute_part + address_part + value_part
+            if self.value and len(self.value) >= 5:
+                address_part = struct.pack(">B", self.value[0])
+                value_part = struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
+                return attribute_part + address_part + value_part
+            raise ValueError(f"AFE_WRITE_REGISTER requires 5 bytes of data, got {len(self.value) if self.value else 0}")
 
         attribute_part = struct.pack(">B", self.command_id)
         return attribute_part
@@ -718,7 +721,8 @@ class ExecuteCommandResponse(Message):
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (response_code,) = struct.unpack(">B", data[pos + 0 : pos + 1])
-        value = data
+        # Extract only the payload bytes after response_code, excluding CRC
+        value = data[pos + 1 : length - cls.crc_len] if length > pos + 1 + cls.crc_len else b""
         msg = ExecuteCommandResponse(response_code=response_code, value=value)
         msg.crc = crc
         msg.length = length
@@ -727,12 +731,59 @@ class ExecuteCommandResponse(Message):
     def _encode_body(self) -> bytes:
         if self.response_code == t.ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
             attribute_part = struct.pack(">B", self.response_code)
-            address_part = struct.pack(">B", self.value[0])
-            value_part = struct.pack(">I", self.value[1])
-            return attribute_part + address_part + value_part
+            if self.value and len(self.value) >= 5:
+                address_part = struct.pack(">B", self.value[0])
+                value_part = struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
+                return attribute_part + address_part + value_part
+            return attribute_part
 
         attribute_part = struct.pack(">B", self.response_code)
         return attribute_part
+
+
+# Message type registry for efficient O(1) lookup
+_MESSAGE_REGISTRY: dict[int, type[Message]] = {
+    0x01: Heartbeat,
+    0x81: HeartbeatResponse,
+    0x82: NackResponse,
+    0x11: SetAttribute,
+    0x91: SetAttributeResponse,
+    0x12: GetAttribute,
+    0x92: GetAttributeResponse,
+    0x13: ResetAttribute,
+    0x93: ResetAttributeResponse,
+    0x14: ConfigureReporting,
+    0x94: ConfigureReportingResponse,
+    0x15: ResetReporting,
+    0x95: ResetReportingResponse,
+    0x16: PeriodicRecording,
+    0x96: PeriodicRecordingResponse,
+    0x21: AttributeChanged,
+    0xA1: AttributeChangedResponse,
+    0x22: RawPulseChanged,
+    0xA2: RawPulseChangedResponse,
+    0x24: RawPulseListChanged,
+    0xA4: RawPulseListChangedResponse,
+    0x31: Alarm,
+    0xB1: AlarmResponse,
+    0x41: ListFiles,
+    0xC1: ListFilesResponse,
+    0x42: GetFile,
+    0xC2: GetFileResponse,
+    0xCA: FileDataChunk,
+    0x43: SendFile,
+    0xC3: SendFileResponse,
+    0x44: DeleteFile,
+    0xC4: DeleteFileResponse,
+    0x45: GetFileUart,
+    0xC5: GetFileUartResponse,
+    0x46: DeleteAllFiles,
+    0xC6: DeleteAllFilesResponse,
+    0x47: ReformatDisk,
+    0xC7: ReformatDiskResponse,
+    0x51: ExecuteCommand,
+    0xD1: ExecuteCommandResponse,
+}
 
 
 def decode(data: bytes, accept_crc_error: bool = False) -> Message:
@@ -758,95 +809,18 @@ def decode(data: bytes, accept_crc_error: bool = False) -> Message:
         )
     # Prepare the data by trimming off any additional data not part of packet
     trimmed_data = data[0:length]
+
+    # Lookup message class from registry
+    message_class = _MESSAGE_REGISTRY.get(message_type)
+    if message_class is None:
+        raise LookupError(f"Unknown message type {hex(message_type)}")
+
     try:
-        if message_type == Heartbeat.msg_type:
-            return Heartbeat.decode(trimmed_data, accept_crc_error)
-        if message_type == HeartbeatResponse.msg_type:
-            return HeartbeatResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == NackResponse.msg_type:
-            return NackResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == SetAttribute.msg_type:
-            return SetAttribute.decode(trimmed_data, accept_crc_error)
-        if message_type == SetAttributeResponse.msg_type:
-            return SetAttributeResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == GetAttribute.msg_type:
-            return GetAttribute.decode(trimmed_data, accept_crc_error)
-        if message_type == GetAttributeResponse.msg_type:
-            return GetAttributeResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ResetAttribute.msg_type:
-            return ResetAttribute.decode(trimmed_data, accept_crc_error)
-        if message_type == ResetAttributeResponse.msg_type:
-            return ResetAttributeResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ConfigureReporting.msg_type:
-            return ConfigureReporting.decode(trimmed_data, accept_crc_error)
-        if message_type == ConfigureReportingResponse.msg_type:
-            return ConfigureReportingResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ResetReporting.msg_type:
-            return ResetReporting.decode(trimmed_data, accept_crc_error)
-        if message_type == ResetReportingResponse.msg_type:
-            return ResetReportingResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == PeriodicRecording.msg_type:
-            return PeriodicRecording.decode(trimmed_data, accept_crc_error)
-        if message_type == PeriodicRecordingResponse.msg_type:
-            return PeriodicRecordingResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == AttributeChanged.msg_type:
-            return AttributeChanged.decode(trimmed_data, accept_crc_error)
-        if message_type == AttributeChangedResponse.msg_type:
-            return AttributeChangedResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == RawPulseChanged.msg_type:
-            return RawPulseChanged.decode(trimmed_data, accept_crc_error)
-        if message_type == RawPulseChangedResponse.msg_type:
-            return RawPulseChangedResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == RawPulseListChanged.msg_type:
-            return RawPulseListChanged.decode(trimmed_data, accept_crc_error)
-        if message_type == RawPulseListChangedResponse.msg_type:
-            return RawPulseListChangedResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == Alarm.msg_type:
-            return Alarm.decode(trimmed_data, accept_crc_error)
-        if message_type == AlarmResponse.msg_type:
-            return AlarmResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ListFiles.msg_type:
-            return ListFiles.decode(trimmed_data, accept_crc_error)
-        if message_type == ListFilesResponse.msg_type:
-            return ListFilesResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == GetFile.msg_type:
-            return GetFile.decode(trimmed_data, accept_crc_error)
-        if message_type == GetFileResponse.msg_type:
-            return GetFileResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == FileDataChunk.msg_type:
-            return FileDataChunk.decode(trimmed_data, accept_crc_error)
-        if message_type == SendFile.msg_type:
-            return SendFile.decode(trimmed_data, accept_crc_error)
-        if message_type == SendFileResponse.msg_type:
-            return SendFileResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == FileDataChunk.msg_type:
-            return FileDataChunk.decode(trimmed_data, accept_crc_error)
-        if message_type == DeleteFile.msg_type:
-            return DeleteFile.decode(trimmed_data, accept_crc_error)
-        if message_type == DeleteFileResponse.msg_type:
-            return DeleteFileResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == GetFileUart.msg_type:
-            return GetFileUart.decode(trimmed_data, accept_crc_error)
-        if message_type == GetFileUartResponse.msg_type:
-            return GetFileUartResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ReformatDisk.msg_type:
-            return ReformatDisk.decode(trimmed_data, accept_crc_error)
-        if message_type == ReformatDiskResponse.msg_type:
-            return ReformatDiskResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == ExecuteCommand.msg_type:
-            return ExecuteCommand.decode(trimmed_data, accept_crc_error)
-        if message_type == ExecuteCommandResponse.msg_type:
-            return ExecuteCommandResponse.decode(trimmed_data, accept_crc_error)
-        if message_type == DeleteAllFiles.msg_type:
-            return DeleteAllFiles.decode(trimmed_data, accept_crc_error)
-        if message_type == DeleteAllFilesResponse.msg_type:
-            return DeleteAllFilesResponse.decode(trimmed_data, accept_crc_error)
+        return message_class.decode(trimmed_data, accept_crc_error)
     except BufferError as e:
         raise e
     except CrcError as e:
         raise e
     except Exception as e:
-        hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1023].hex()}..."
+        hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1024].hex()}..."
         raise DecodeError(f"Error decoding message type {hex(message_type)}. Message payload: {hexdump}") from e
-
-    raise LookupError(f"Unknown message type {hex(message_type)}")

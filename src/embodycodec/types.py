@@ -40,7 +40,7 @@ class ComplexType(ABC):
     def decode(cls: type[T], data: bytes) -> T:
         if len(data) < cls.default_length():
             raise BufferError(
-                f"Buffer too short for {cls.__class__.__name__} message. Received "
+                f"Buffer too short for {cls.__name__} message. Received "
                 f"{len(data)} bytes, expected {cls.default_length()} bytes"
             )
         msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.default_length()])))
@@ -249,12 +249,12 @@ class BatteryDiagnostics(ComplexType):
 
     def to_str(self):
         return (
-            f"ttf: {self.ttf}, tte: {self.tte}, voltage: {self.voltage} ({self.voltage * 10}mV), "
-            f"avg_voltage: {self.avg_voltage} ({self.avg_voltage * 10}mV), current: {self.current}"
-            f"({self.current * 100}mAh), avg_current: {self.avg_current} ({self.avg_current * 100}mAh), "
-            f"full_cap: {self.full_cap} ({self.full_cap * 100}mAh), rep_cap: {self.rep_cap} "
-            f"({self.rep_cap * 100}mAh), repsoc: {self.repsoc} ({self.repsoc * 100}%), "
-            f"vfsoc: {self.vfsoc} ({self.vfsoc * 100}%)"
+            f"ttf: {self.ttf}, tte: {self.tte}, voltage: {self.voltage} ({self.voltage / 10}mV), "
+            f"avg_voltage: {self.avg_voltage} ({self.avg_voltage / 10}mV), current: {self.current} "
+            f"({self.current / 100}mA), avg_current: {self.avg_current} ({self.avg_current / 100}mA), "
+            f"full_cap: {self.full_cap} ({self.full_cap / 100}mAh), rep_cap: {self.rep_cap} "
+            f"({self.rep_cap / 100}mAh), repsoc: {self.repsoc} ({self.repsoc / 100}%), "
+            f"vfsoc: {self.vfsoc} ({self.vfsoc / 100}%)"
         )
 
 

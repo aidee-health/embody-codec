@@ -8,6 +8,10 @@ provides access methods for parsing one and one message from a bytes object.
 import struct
 from dataclasses import dataclass
 
+# Temperature sensor conversion factor (degrees Celsius per raw unit)
+# This factor converts raw sensor values to degrees Celsius
+TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
+
 
 @dataclass
 class ProtocolMessage:
@@ -221,7 +225,7 @@ class Temperature(TimetickedMessage):
     temp_raw: int
 
     def temp_celsius(self) -> float:
-        return self.temp_raw * 0.0078125
+        return self.temp_raw * TEMPERATURE_SCALE_FACTOR
 
 
 @dataclass
@@ -412,54 +416,48 @@ class BatteryDiagnostics(TimetickedMessage):
         return msg
 
 
+# File protocol message registry
+_FILE_MESSAGE_REGISTRY: dict[int, type[ProtocolMessage]] = {
+    0x01: Header,
+    0x71: Timestamp,
+    0xAC: ImuRaw,
+    0xA4: Imu,
+    0xB1: PpgRaw,
+    0xA2: PpgRawAll,
+    0xA1: BatteryLevel,
+    0xA5: HeartRate,
+    0xAD: HeartRateInterval,
+    0x74: NoOfPpgValues,
+    0xA9: ChargeState,
+    0xAA: BeltOnBody,
+    0x07: AfeSettingsAll,
+    0xB2: AccRaw,
+    0xB3: GyroRaw,
+    0xB4: Temperature,
+    0xB6: PulseRawList,
+    0xB8: PulseBlockEcg,
+    0xB9: PulseBlockPpg,
+    0xBB: BatteryDiagnostics,
+}
+
+
 def decode_message(data: bytes, version: tuple[int, int, int] | None = None) -> ProtocolMessage:
     """Decodes a bytes object into proper subclass of ProtocolMessage.
 
     raises LookupError if unknown message type.
     """
     message_type = data[0]
-    if message_type == 0x01:
-        return Header.decode(data[1:], version)
-    elif message_type == 0x71:
-        return Timestamp.decode(data[1:], version)
-    elif message_type == 0xAC:
-        return ImuRaw.decode(data[1:], version)
-    elif message_type == 0xA4:
-        return Imu.decode(data[1:], version)
-    elif message_type == 0xB1:
-        return PpgRaw.decode(data[1:], version)
-    elif message_type == 0xA2:
-        return PpgRawAll.decode(data[1:], version)
-    elif message_type == 0xA1:
-        return BatteryLevel.decode(data[1:], version)
-    elif message_type == 0xA5:
-        return HeartRate.decode(data[1:], version)
-    elif message_type == 0xAD:
-        return HeartRateInterval.decode(data[1:], version)
-    elif message_type == 0x74:
-        return NoOfPpgValues.decode(data[1:], version)
-    elif message_type == 0xA9:
-        return ChargeState.decode(data[1:], version)
-    elif message_type == 0xAA:
-        return BeltOnBody.decode(data[1:], version)
-    elif message_type == 0x06 and isinstance(version, tuple) and version >= (4, 0, 1):
-        return AfeSettings.decode(data[1:], version)
-    elif message_type == 0x06:
-        return AfeSettingsOld.decode(data[1:], version)
-    elif message_type == 0x07:
-        return AfeSettingsAll.decode(data[1:], version)
-    elif message_type == 0xB2:
-        return AccRaw.decode(data[1:], version)
-    elif message_type == 0xB3:
-        return GyroRaw.decode(data[1:], version)
-    elif message_type == 0xB4:
-        return Temperature.decode(data[1:], version)
-    elif message_type == 0xB6:
-        return PulseRawList.decode(data[1:], version)
-    elif message_type == 0xB8:
-        return PulseBlockEcg.decode(data[1:], version)
-    elif message_type == 0xB9:
-        return PulseBlockPpg.decode(data[1:], version)
-    elif message_type == 0xBB:
-        return BatteryDiagnostics.decode(data[1:], version)
-    raise LookupError(f"Unknown message type {hex(message_type)}")
+
+    # Special handling for version-dependent AfeSettings
+    if message_type == 0x06:
+        if isinstance(version, tuple) and version >= (4, 0, 1):
+            return AfeSettings.decode(data[1:], version)
+        else:
+            return AfeSettingsOld.decode(data[1:], version)
+
+    # Lookup message class from registry
+    message_class = _FILE_MESSAGE_REGISTRY.get(message_type)
+    if message_class is None:
+        raise LookupError(f"Unknown message type {hex(message_type)}")
+
+    return message_class.decode(data[1:], version)
