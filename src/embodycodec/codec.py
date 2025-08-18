@@ -649,7 +649,7 @@ class ExecuteCommand(Message):
     }
     msg_type = 0x51
     command_id: int
-    value: bytes
+    value: bytes | int | None
 
     def command_message(self) -> str | None:
         return self.command_types.get(self.command_id)
@@ -669,45 +669,76 @@ class ExecuteCommand(Message):
     def _encode_body(self) -> bytes:
         if self.command_id == t.ExecuteCommandType.PRESS_BUTTON.value:
             attribute_part = struct.pack(">B", self.command_id)
-            return attribute_part + self.value
+            return attribute_part + (self.value if isinstance(self.value, bytes) else b"")
 
         if self.command_id == t.ExecuteCommandType.FORCE_ON_BODY.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_USB_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_BLE_CONNECTION.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.FORCE_BATTERY_LEVEL.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
             attribute_part = struct.pack(">B", self.command_id)
-            value_part = struct.pack(">B", self.value[0]) if self.value and len(self.value) > 0 else b"\x00"
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">B", self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">B", self.value)
+            else:
+                value_part = b"\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
             attribute_part = struct.pack(">B", self.command_id)
-            if self.value and len(self.value) >= 5:
+            if isinstance(self.value, bytes) and len(self.value) >= 5:
                 address_part = struct.pack(">B", self.value[0])
                 value_part = struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
                 return attribute_part + address_part + value_part
-            raise ValueError(f"AFE_WRITE_REGISTER requires 5 bytes of data, got {len(self.value) if self.value else 0}")
+            data_len = len(self.value) if isinstance(self.value, bytes) else 0
+            raise ValueError(f"AFE_WRITE_REGISTER requires 5 bytes of data, got {data_len}")
 
         attribute_part = struct.pack(">B", self.command_id)
         return attribute_part
@@ -717,7 +748,7 @@ class ExecuteCommand(Message):
 class ExecuteCommandResponse(Message):
     msg_type = 0xD1
     response_code: int
-    value: bytes
+    value: bytes | None
 
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ExecuteCommandResponse":
@@ -734,7 +765,7 @@ class ExecuteCommandResponse(Message):
     def _encode_body(self) -> bytes:
         if self.response_code == t.ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
             attribute_part = struct.pack(">B", self.response_code)
-            if self.value and len(self.value) >= 5:
+            if isinstance(self.value, bytes) and len(self.value) >= 5:
                 address_part = struct.pack(">B", self.value[0])
                 value_part = struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
                 return attribute_part + address_part + value_part

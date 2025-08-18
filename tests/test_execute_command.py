@@ -86,3 +86,39 @@ def test_execute_command_all_command_types_with_value():
         body = cmd._encode_body()
         assert body[0] == command_id
         assert body[1] == value[0]
+
+
+def test_execute_command_with_integer_value():
+    """Test that ExecuteCommand handles integer values correctly."""
+    # Test FORCE_BATTERY_LEVEL with integer value
+    cmd = codec.ExecuteCommand(command_id=0x07, value=0x50)
+    body = cmd._encode_body()
+    assert body == b"\x07\x50"  # command_id + value
+
+    # Test AFE_CALIBRATION_COMMAND with integer value
+    cmd2 = codec.ExecuteCommand(command_id=0xA3, value=0x10)
+    body2 = cmd2._encode_body()
+    assert body2 == b"\xa3\x10"  # command_id + value
+
+
+def test_execute_command_with_none_value():
+    """Test that ExecuteCommand handles None values correctly."""
+    # Test various command types with None value - should default to 0x00
+    test_cases = [
+        (0x04, b"\x04\x00"),  # FORCE_ON_BODY
+        (0x05, b"\x05\x00"),  # FORCE_USB_CONNECTION
+        (0x06, b"\x06\x00"),  # FORCE_BLE_CONNECTION
+        (0x07, b"\x07\x00"),  # FORCE_BATTERY_LEVEL
+        (0xA3, b"\xa3\x00"),  # AFE_CALIBRATION_COMMAND
+        (0xA4, b"\xa4\x00"),  # AFE_GAIN_SETTING
+    ]
+
+    for command_id, expected_body in test_cases:
+        cmd = codec.ExecuteCommand(command_id=command_id, value=None)
+        body = cmd._encode_body()
+        assert body == expected_body, f"Failed for command_id {command_id:#x}"
+
+    # Test PRESS_BUTTON with None value - should just have command_id
+    cmd_press = codec.ExecuteCommand(command_id=0x03, value=None)
+    body_press = cmd_press._encode_body()
+    assert body_press == b"\x03"  # Just command_id, no value bytes
