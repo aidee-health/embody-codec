@@ -22,6 +22,15 @@ class ExecuteCommandType(enum.Enum):
     AFE_GAIN_SETTING = 0xA4
 
 
+class SystemStatusType(enum.Enum):
+    STATUS_STATE_NONE = 0x00
+    STATUS_STATE_INIT = 0x01
+    STATUS_STATE_OK = 0x02
+    STATUS_STATE_WARNING = 0x03
+    STATUS_STATE_INIT_FAILED = 0x04
+    STATUS_STATE_FAILED = 0x05
+
+
 T = TypeVar("T", bound="ComplexType")
 
 
@@ -165,6 +174,35 @@ class PulseRawList(ComplexType):
         format_and_sizes <<= 2
         format_and_sizes += fmt & 0x3
         return format_and_sizes & 0xFF
+
+
+@dataclass
+class SystemStatus(ComplexType):
+    status: list[SystemStatusType]
+    worst: list[SystemStatusType]
+
+    @classmethod
+    def decode(cls, data: bytes) -> "SystemStatus":
+        if len(data) < 1:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 1 bytes")
+        (format_and_sizes,) = struct.unpack("<B", data[2:3])
+        status = []
+        worst = []
+        for n in range(len(data)):
+            status.append(data[n] & 0x0F)
+            worst.append(data[n]>>4 & 0x0F)
+        return SystemStatus(
+            status=status,
+            worst=worst,
+        )
+
+    def encode(self) -> bytes:
+        format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
+        bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
+        payload = bytes()
+        for n in range(len(self.status)):
+            payload += bytes([self.status & 0x0F | ((self.worst<<4) & 0xF0)])
+        return payload
 
 
 @dataclass
