@@ -197,7 +197,7 @@ class SystemStatus(ComplexType):
         )
 
     def encode(self) -> bytes:
-        payload = bytes()
+        payload = b""
         for n in range(len(self.status)):
             payload += bytes([self.status[n] & 0x0F | ((self.worst[n]<<4) & 0xF0)])
         return payload
