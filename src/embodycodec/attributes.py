@@ -207,7 +207,7 @@ class SystemStatusNamesAttribute(Attribute):
         return SystemStatusNamesAttribute(value=string.split(','))
 
     def encode(self) -> bytes:
-        body: bytes()
+        body = bytes()
         for n in self.value[:-1]:
             body += bytes(n,"ascii") + ","
         body += bytes(self.value[-1],"ascii")
@@ -522,7 +522,7 @@ _ATTRIBUTE_REGISTRY: dict[int, type[Attribute]] = {
     0xB7: FlashInfoAttribute,
     0xBB: BatteryDiagnosticsAttribute,
     0xC2: LedsAttribute,
-    0xC2: SystemStatusAttribute,
+    0xC3: SystemStatusAttribute,
 }
 
 
