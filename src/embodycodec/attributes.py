@@ -221,15 +221,20 @@ class SystemStatusNamesAttribute(Attribute):
 
 @dataclass
 class SystemStatusAttribute(Attribute):
-    attribute_id = 0x08
-    value: list[str]
+    attribute_id = 0xC3
+    value: t.SystemStatus
 
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatusAttribute":
         if len(data) == 0:
-            return SystemStatusAttribute(value=[])
-        string = data.decode("utf-8")
-        return SystemStatusAttribute(value=string.split(","))
+            return SystemStatusAttribute(value=t.SystemStatus(status=[], worst=[]))
+        return SystemStatusAttribute(value=t.SystemStatus.decode(data))
+
+    def encode(self) -> bytes:
+        return self.value.encode()
+
+    def length(self) -> int:
+        return len(self.value.status)
 
 
 @dataclass
