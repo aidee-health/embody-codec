@@ -166,6 +166,15 @@ def test_get_attribute_response_current_time() -> None:
     )
 
 
+def test_get_attribute_response_system_status_names() -> None:
+    do_test_get_attribute_response_and_return_decoded(
+        attributes.SystemStatusNamesAttribute(
+            ["AFE","IMU","TEMP"]
+        ),
+        b"\x92\x00\x1a\x08\x00\x00\x01\x80\x44\x49\xb6\xd3\x00\x01\x02\x0cAFE,IMU,TEMP\x00\x00",
+    )
+
+
 def test_get_attribute_response_serial_no() -> None:
     decoded = do_test_get_attribute_response_and_return_decoded(
         attributes.SerialNoAttribute(12345678),

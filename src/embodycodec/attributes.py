@@ -206,20 +206,27 @@ class SystemStatusNamesAttribute(Attribute):
         string = data.decode('utf-8')
         return SystemStatusNamesAttribute(value=string.split(','))
 
+    def encode(self) -> bytes:
+        b: bytes(attribute_id)
+        for n in self.value[:-1]:
+            b += bytes(n,"ascii") + ","
+        b += bytes(self.value[-1],"ascii")
+        return b
+
 
 @dataclass
-class SystemStatusNamesAttribute(Attribute):
+class SystemStatusAttribute(Attribute):
     attribute_id = 0x08
     value: list[str]
 
     @classmethod
-    def decode(cls, data: bytes) -> "SystemStatusNamesAttribute":
+    def decode(cls, data: bytes) -> "SystemStatusAttribute":
         if len(data) == 0:
-            return SystemStatusNamesAttribute(
+            return SystemStatusAttribute(
                 value=list[str]
             )
         string = data.decode('utf-8')
-        return SystemStatusNamesAttribute(value=string.split(','))
+        return SystemStatusAttribute(value=string.split(','))
 
 
 @dataclass
