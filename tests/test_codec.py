@@ -173,12 +173,20 @@ def test_get_attribute_response_system_status_names() -> None:
     )
 
 
-def test_get_attribute_response_system_status_names() -> None:
+def test_get_attribute_response_system_status() -> None:
     do_test_get_attribute_response_and_return_decoded(
         attributes.SystemStatusAttribute(
             types.SystemStatus(
-                status=[types.SystemStatusType.STATUS_STATE_OK,types.SystemStatusType.STATUS_STATE_INIT,types.SystemStatusType.STATUS_STATE_FAILED],
-                worst=[types.SystemStatusType.STATUS_STATE_INIT,types.SystemStatusType.STATUS_STATE_INIT,types.SystemStatusType.STATUS_STATE_FAILED]
+                status=[
+                    types.SystemStatusType.STATUS_STATE_OK,
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_FAILED,
+                ],
+                worst=[
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_FAILED,
+                ],
             )
         ),
         b"\x92\x00\x15\xc3\x00\x00\x01\x80\x44\x49\xb6\xd3\x00\x01\x02\x03\x12\x11\x55\x53\x97",

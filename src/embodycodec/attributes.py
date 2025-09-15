@@ -215,7 +215,7 @@ class SystemStatusNamesAttribute(Attribute):
         l = 0
         for v in self.value:
             l += len(v)
-        l+= len(self.value)-1
+        l += len(self.value) - 1
         return l
 
 
