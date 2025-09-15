@@ -189,8 +189,8 @@ class SystemStatus(ComplexType):
         status = []
         worst = []
         for n in range(len(data)):
-            status.append(data[n] & 0x0F)
-            worst.append(data[n] >> 4 & 0x0F)
+            status.append(SystemStatusType(data[n] & 0x0F))
+            worst.append(SystemStatusType(data[n] >> 4 & 0x0F))
         return SystemStatus(
             status=status,
             worst=worst,
@@ -199,7 +199,7 @@ class SystemStatus(ComplexType):
     def encode(self) -> bytes:
         payload = b""
         for n in range(len(self.status)):
-            payload += bytes([self.status[n] & 0x0F | ((self.worst[n] << 4) & 0xF0)])
+            payload += bytes([self.status[n].value & 0x0F | ((self.worst[n].value << 4) & 0xF0)])
         return payload
 
 

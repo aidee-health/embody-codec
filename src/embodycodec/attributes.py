@@ -200,14 +200,14 @@ class SystemStatusNamesAttribute(Attribute):
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatusNamesAttribute":
         if len(data) == 0:
-            return SystemStatusNamesAttribute(value=list[str])
+            return SystemStatusNamesAttribute(value=[])
         string = data.decode("utf-8")
         return SystemStatusNamesAttribute(value=string.split(","))
 
     def encode(self) -> bytes:
         body = b""
         for n in self.value[:-1]:
-            body += bytes(n, "ascii") + ","
+            body += bytes(n, "ascii") + b","
         body += bytes(self.value[-1], "ascii")
         return body
 
@@ -220,7 +220,7 @@ class SystemStatusAttribute(Attribute):
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatusAttribute":
         if len(data) == 0:
-            return SystemStatusAttribute(value=list[str])
+            return SystemStatusAttribute(value=[])
         string = data.decode("utf-8")
         return SystemStatusAttribute(value=string.split(","))
 
