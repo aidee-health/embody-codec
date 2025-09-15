@@ -207,11 +207,11 @@ class SystemStatusNamesAttribute(Attribute):
         return SystemStatusNamesAttribute(value=string.split(','))
 
     def encode(self) -> bytes:
-        b: bytes()
+        body: bytes()
         for n in self.value[:-1]:
-            b += bytes(n,"ascii") + ","
-        b += bytes(self.value[-1],"ascii")
-        return b
+            body += bytes(n,"ascii") + ","
+        body += bytes(self.value[-1],"ascii")
+        return body
 
 
 @dataclass
