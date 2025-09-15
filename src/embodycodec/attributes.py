@@ -212,11 +212,11 @@ class SystemStatusNamesAttribute(Attribute):
         return body
 
     def length(self) -> int:
-        l = 0
+        temp_len = 0
         for v in self.value:
-            l += len(v)
-        l += len(self.value) - 1
-        return l
+            temp_len += len(v)
+        temp_len += len(self.value) - 1
+        return temp_len
 
 
 @dataclass
