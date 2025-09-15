@@ -197,11 +197,9 @@ class SystemStatus(ComplexType):
         )
 
     def encode(self) -> bytes:
-        format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
-        bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
         payload = bytes()
         for n in range(len(self.status)):
-            payload += bytes([self.status & 0x0F | ((self.worst<<4) & 0xF0)])
+            payload += bytes([self.status[n] & 0x0F | ((self.worst[n]<<4) & 0xF0)])
         return payload
 
 
