@@ -211,13 +211,6 @@ class SystemStatusNamesAttribute(Attribute):
         body += bytes(self.value[-1], "ascii")
         return body
 
-    def length(self) -> int:
-        temp_len = 0
-        for v in self.value:
-            temp_len += len(v)
-        temp_len += len(self.value) - 1
-        return temp_len
-
 
 @dataclass
 class SystemStatusAttribute(Attribute):
@@ -232,9 +225,6 @@ class SystemStatusAttribute(Attribute):
 
     def encode(self) -> bytes:
         return self.value.encode()
-
-    def length(self) -> int:
-        return len(self.value.status)
 
 
 @dataclass

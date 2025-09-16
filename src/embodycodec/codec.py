@@ -231,8 +231,8 @@ class GetAttributeResponse(Message):
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">BQ", self.attribute_id, self.changed_at)
         reporting_part = self.reporting.encode()
-        length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
+        length_part = struct.pack(">B", len(attribute_part))
         return first_part_of_body + reporting_part + length_part + attribute_part
 
 
@@ -341,8 +341,8 @@ class AttributeChanged(Message):
 
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">QB", self.changed_at, self.attribute_id)
-        length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
+        length_part = struct.pack(">B", len(attribute_part))
         return first_part_of_body + length_part + attribute_part
 
 
