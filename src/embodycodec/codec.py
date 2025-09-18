@@ -333,7 +333,7 @@ class AttributeChanged(Message):
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
-        value = a.decode_attribute(attribute_id, data[pos + 10 : length -2])  # Skip crc?
+        value = a.decode_attribute(attribute_id, data[pos + 10 : length - 2])  # Skip crc?
         msg = AttributeChanged(changed_at=changed_at, attribute_id=attribute_id, value=value)
         msg.crc = crc
         msg.length = length
