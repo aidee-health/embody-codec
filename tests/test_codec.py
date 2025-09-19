@@ -304,6 +304,34 @@ def test_attribute_changed() -> None:
     assert decoded == response
 
 
+def test_attribute_changed_complex() -> None:
+    response = codec.AttributeChanged(
+        changed_at=int(datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000),
+        attribute_id=attributes.SystemStatusAttribute.attribute_id,
+        value=attributes.SystemStatusAttribute(
+            types.SystemStatus(
+                status=[
+                    types.SystemStatusType.STATUS_STATE_OK,
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_FAILED,
+                ],
+                worst=[
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_INIT,
+                    types.SystemStatusType.STATUS_STATE_FAILED,
+                ],
+            )
+        ),
+    )
+    encoded = response.encode()
+    assert encoded == b"\x21\x00\x12\x00\x00\x01\x80\x44\x49\xb6\xd3\xc3\x03\x12\x11\x55\x8c\x3f"
+    decoded = codec.decode(encoded)
+    assert isinstance(decoded, codec.AttributeChanged)
+    assert isinstance(decoded.value, attributes.SystemStatusAttribute)
+    assert decoded.length == 18
+    assert decoded == response
+
+
 def test_attribute_changed_response() -> None:
     response = codec.AttributeChangedResponse()
     encoded = response.encode()
@@ -789,6 +817,37 @@ def test_get_attribute_response_battery_diagnostics() -> None:
     assert isinstance(msg, codec.GetAttributeResponse)
     assert isinstance(msg.value, attributes.BatteryDiagnosticsAttribute)
     assert msg.value.value is not None
+
+
+def test_get_attribute_changed_battery_diagnostics() -> None:
+    response = codec.AttributeChanged(
+        changed_at=int(datetime.fromisoformat("2022-04-20 00:05:23.283+00:00").timestamp() * 1000),
+        attribute_id=attributes.DiagnosticsAttribute.attribute_id,
+        value=attributes.DiagnosticsAttribute(
+            types.Diagnostics(
+                rep_soc = 9900,         # 99%
+                avg_current = 120,      # 1.2 mA
+                rep_cap = 30800,        # 308 mAh
+                full_cap = 32000,       # 320 mAh
+                tte = 287454020,
+                ttf = 287454020,
+                voltage = 4150000,      # 4.15v
+                avg_voltage = 4150000,  # 4.15v
+            )
+        ),
+    )
+    encoded = response.encode()
+    expected = bytes.fromhex("210027000001804449b6d3b51826AC007878507D001122334411223344003F52F0003F52F0343F")
+    assert encoded == expected
+    decoded = codec.decode(encoded)
+    assert isinstance(decoded, codec.AttributeChanged)
+    assert isinstance(decoded.value, attributes.DiagnosticsAttribute)
+    assert decoded.length == 39
+    assert decoded == response
+    msg = codec.decode(expected)
+    assert isinstance(msg, codec.AttributeChanged)
+    assert isinstance(msg.value, attributes.DiagnosticsAttribute)
+
 
 
 # helper method for get_attribute_response tests
