@@ -213,7 +213,7 @@ class SystemStatusNamesAttribute(Attribute):
 
 
 @dataclass
-class SystemStatusAttribute(Attribute):
+class SystemStatusAttribute(ComplexTypeAttribute):
     attribute_id = 0xC3
     value: t.SystemStatus
 
