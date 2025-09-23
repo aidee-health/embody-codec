@@ -23,12 +23,12 @@ class ExecuteCommandType(enum.Enum):
 
 
 class SystemStatusType(enum.Enum):
-    NONE        = 0x00
-    INIT        = 0x01
-    OK          = 0x02
-    WARNING     = 0x03
+    NONE = 0x00
+    INIT = 0x01
+    OK = 0x02
+    WARNING = 0x03
     INIT_FAILED = 0x04
-    FAILED      = 0x05
+    FAILED = 0x05
 
 
 T = TypeVar("T", bound="ComplexType")

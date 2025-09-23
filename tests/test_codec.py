@@ -825,14 +825,14 @@ def test_get_attribute_changed_battery_diagnostics() -> None:
         attribute_id=attributes.DiagnosticsAttribute.attribute_id,
         value=attributes.DiagnosticsAttribute(
             types.Diagnostics(
-                rep_soc = 9900,         # 99%
-                avg_current = 120,      # 1.2 mA
-                rep_cap = 30800,        # 308 mAh
-                full_cap = 32000,       # 320 mAh
-                tte = 287454020,
-                ttf = 287454020,
-                voltage = 4150000,      # 4.15v
-                avg_voltage = 4150000,  # 4.15v
+                rep_soc=9900,  # 99%
+                avg_current=120,  # 1.2 mA
+                rep_cap=30800,  # 308 mAh
+                full_cap=32000,  # 320 mAh
+                tte=287454020,
+                ttf=287454020,
+                voltage=4150000,  # 4.15v
+                avg_voltage=4150000,  # 4.15v
             )
         ),
     )
@@ -847,7 +847,6 @@ def test_get_attribute_changed_battery_diagnostics() -> None:
     msg = codec.decode(expected)
     assert isinstance(msg, codec.AttributeChanged)
     assert isinstance(msg.value, attributes.DiagnosticsAttribute)
-
 
 
 # helper method for get_attribute_response tests
