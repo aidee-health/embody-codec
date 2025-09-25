@@ -311,14 +311,14 @@ def test_attribute_changed_complex() -> None:
         value=attributes.SystemStatusAttribute(
             types.SystemStatus(
                 status=[
-                    types.SystemStatusType.STATUS_STATE_OK,
-                    types.SystemStatusType.STATUS_STATE_INIT,
-                    types.SystemStatusType.STATUS_STATE_FAILED,
+                    types.SystemStatusType.OK,
+                    types.SystemStatusType.INIT,
+                    types.SystemStatusType.FAILED,
                 ],
                 worst=[
-                    types.SystemStatusType.STATUS_STATE_INIT,
-                    types.SystemStatusType.STATUS_STATE_INIT,
-                    types.SystemStatusType.STATUS_STATE_FAILED,
+                    types.SystemStatusType.INIT,
+                    types.SystemStatusType.INIT,
+                    types.SystemStatusType.FAILED,
                 ],
             )
         ),

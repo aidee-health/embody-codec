@@ -643,6 +643,7 @@ class ExecuteCommand(Message):
         0x05: "USB Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x06: "BLE Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x07: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
+        0x08: "Reinit Service: <Service (1 byte)><Parameter (2 bytes) 0x0000>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -710,6 +711,16 @@ class ExecuteCommand(Message):
                 value_part = struct.pack(">B", self.value)
             else:
                 value_part = b"\x00"
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.REINIT_SERVICE.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">BBBB", self.value[3], self.value[2], self.value[1], self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">I", self.value)
+            else:
+                value_part = b"\x00\x00\x00\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
