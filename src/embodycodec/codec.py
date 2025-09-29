@@ -231,8 +231,8 @@ class GetAttributeResponse(Message):
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">BQ", self.attribute_id, self.changed_at)
         reporting_part = self.reporting.encode()
-        length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
+        length_part = struct.pack(">B", len(attribute_part))
         return first_part_of_body + reporting_part + length_part + attribute_part
 
 
@@ -333,7 +333,8 @@ class AttributeChanged(Message):
         pos = cls.hdr_len  # offset to start of body (skips msg_type and length field)
         (changed_at,) = struct.unpack(">Q", data[pos + 0 : pos + 8])
         (attribute_id,) = struct.unpack(">B", data[pos + 8 : pos + 9])
-        value = a.decode_attribute(attribute_id, data[pos + 10 :])
+        (attr_length,) = struct.unpack(">B", data[pos + 9 : pos + 10])
+        value = a.decode_attribute(attribute_id, data[pos + 10 : pos + 10 + attr_length])
         msg = AttributeChanged(changed_at=changed_at, attribute_id=attribute_id, value=value)
         msg.crc = crc
         msg.length = length
@@ -341,8 +342,8 @@ class AttributeChanged(Message):
 
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">QB", self.changed_at, self.attribute_id)
-        length_part = struct.pack(">B", self.value.length())
         attribute_part = self.value.encode()
+        length_part = struct.pack(">B", len(attribute_part))
         return first_part_of_body + length_part + attribute_part
 
 
@@ -642,6 +643,7 @@ class ExecuteCommand(Message):
         0x05: "USB Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x06: "BLE Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x07: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
+        0x08: "Reinit Service: <Service (1 byte)><Parameter (4 bytes/int)) 0x00000000>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
@@ -709,6 +711,16 @@ class ExecuteCommand(Message):
                 value_part = struct.pack(">B", self.value)
             else:
                 value_part = b"\x00"
+            return attribute_part + value_part
+
+        if self.command_id == t.ExecuteCommandType.REINIT_SERVICE.value:
+            attribute_part = struct.pack(">B", self.command_id)
+            if isinstance(self.value, bytes) and len(self.value) > 0:
+                value_part = struct.pack(">BBBB", self.value[3], self.value[2], self.value[1], self.value[0])
+            elif isinstance(self.value, int):
+                value_part = struct.pack(">I", self.value)
+            else:
+                value_part = b"\x00\x00\x00\x00"
             return attribute_part + value_part
 
         if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:

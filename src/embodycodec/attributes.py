@@ -193,6 +193,41 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
 
 
 @dataclass
+class SystemStatusNamesAttribute(Attribute):
+    attribute_id = 0x08
+    value: list[str]
+
+    @classmethod
+    def decode(cls, data: bytes) -> "SystemStatusNamesAttribute":
+        if len(data) == 0:
+            return SystemStatusNamesAttribute(value=[])
+        string = data.decode("utf-8")
+        return SystemStatusNamesAttribute(value=string.split(","))
+
+    def encode(self) -> bytes:
+        body = b""
+        for n in self.value[:-1]:
+            body += bytes(n, "ascii") + b","
+        body += bytes(self.value[-1], "ascii")
+        return body
+
+
+@dataclass
+class SystemStatusAttribute(ComplexTypeAttribute):
+    attribute_id = 0xC3
+    value: t.SystemStatus
+
+    @classmethod
+    def decode(cls, data: bytes) -> "SystemStatusAttribute":
+        if len(data) == 0:
+            return SystemStatusAttribute(value=t.SystemStatus(status=[], worst=[]))
+        return SystemStatusAttribute(value=t.SystemStatus.decode(data))
+
+    def encode(self) -> bytes:
+        return self.value.encode()
+
+
+@dataclass
 class CurrentTimeAttribute(Attribute):
     struct_format = ">Q"
     attribute_id = 0x71
@@ -456,6 +491,7 @@ _ATTRIBUTE_REGISTRY: dict[int, type[Attribute]] = {
     0x05: VendorAttribute,
     0x06: AfeSettingsAttribute,
     0x07: AfeSettingsAllAttribute,
+    0x08: SystemStatusNamesAttribute,
     0x71: CurrentTimeAttribute,
     0x72: MeasurementDeactivatedAttribute,
     0x73: TraceLevelAttribute,
@@ -484,6 +520,7 @@ _ATTRIBUTE_REGISTRY: dict[int, type[Attribute]] = {
     0xB7: FlashInfoAttribute,
     0xBB: BatteryDiagnosticsAttribute,
     0xC2: LedsAttribute,
+    0xC3: SystemStatusAttribute,
 }
 
 

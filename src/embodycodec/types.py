@@ -16,10 +16,20 @@ class ExecuteCommandType(enum.Enum):
     FORCE_USB_CONNECTION = 0x05
     FORCE_BLE_CONNECTION = 0x06
     FORCE_BATTERY_LEVEL = 0x07
+    REINIT_SERVICE = 0x08
     AFE_READ_ALL_REGISTERS = 0xA1
     AFE_WRITE_REGISTER = 0xA2
     AFE_CALIBRATION_COMMAND = 0xA3
     AFE_GAIN_SETTING = 0xA4
+
+
+class SystemStatusType(enum.Enum):
+    NONE = 0x00
+    INIT = 0x01
+    OK = 0x02
+    WARNING = 0x03
+    INIT_FAILED = 0x04
+    FAILED = 0x05
 
 
 T = TypeVar("T", bound="ComplexType")
@@ -165,6 +175,33 @@ class PulseRawList(ComplexType):
         format_and_sizes <<= 2
         format_and_sizes += fmt & 0x3
         return format_and_sizes & 0xFF
+
+
+@dataclass
+class SystemStatus(ComplexType):
+    status: list[SystemStatusType]
+    worst: list[SystemStatusType]
+
+    @classmethod
+    def decode(cls, data: bytes) -> "SystemStatus":
+        if len(data) < 1:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 1 bytes")
+        (format_and_sizes,) = struct.unpack("<B", data[2:3])
+        status = []
+        worst = []
+        for n in range(len(data)):
+            status.append(SystemStatusType(data[n] & 0x0F))
+            worst.append(SystemStatusType(data[n] >> 4 & 0x0F))
+        return SystemStatus(
+            status=status,
+            worst=worst,
+        )
+
+    def encode(self) -> bytes:
+        payload = b""
+        for n in range(len(self.status)):
+            payload += bytes([self.status[n].value & 0x0F | ((self.worst[n].value << 4) & 0xF0)])
+        return payload
 
 
 @dataclass
