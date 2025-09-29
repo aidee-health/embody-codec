@@ -643,7 +643,7 @@ class ExecuteCommand(Message):
         0x05: "USB Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x06: "BLE Connection: <Force Off (0) | Force On (1) | Force Disable (0xFF) (1 byte)>",
         0x07: "Battery level: <Force value | Force Disable (0xFF) (1 byte)>",
-        0x08: "Reinit Service: <Service (1 byte)><Parameter (2 bytes) 0x0000>",
+        0x08: "Reinit Service: <Service (1 byte)><Parameter (4 bytes/int)) 0x00000000>",
         0xA1: "AFE: Read all registers",
         0xA2: "AFE: Write register <Addr (1 byte)><Value (4 bytes)>",
         0xA3: "AFE: Calibration command <Cmd (1 byte))",
