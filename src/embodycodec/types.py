@@ -186,7 +186,6 @@ class SystemStatus(ComplexType):
     def decode(cls, data: bytes) -> "SystemStatus":
         if len(data) < 1:
             raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 1 bytes")
-        (format_and_sizes,) = struct.unpack("<B", data[2:3])
         status = []
         worst = []
         for n in range(len(data)):

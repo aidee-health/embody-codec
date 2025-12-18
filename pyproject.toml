@@ -65,7 +65,7 @@ redundant-cast = "warn"            # Catch unnecessary casts
 # Future consideration: Enable more strict rules after team is comfortable
 
 [tool.ty.terminal]
-output-format = "full"             # Verbose error messages (better than mypy)
+output-format = "full"             # Provides detailed error messages with full context
 error-on-warning = false           # Don't fail on warnings initially
 
 [tool.ruff]
@@ -110,9 +110,6 @@ ignore = [
     "PLR0911", # Too many return statements
     "PLR0912", # Too many branches
     "PLR0915", # Too many statements
-]
-unfixable = [
-    "F401", # Unused imports - used in type hints
 ]
 
 [tool.ruff.lint.pydocstyle]
