@@ -54,10 +54,10 @@ def test_decode_accept_crc_error():
 
     # Should raise CRC error when not accepting CRC errors
     with pytest.raises(CrcError):
-        codec.decode(message, accept_crc_error=False)
+        codec.decode(bytes(message), accept_crc_error=False)
 
     # Should successfully decode when accepting CRC errors
-    result = codec.decode(message, accept_crc_error=True)
+    result = codec.decode(bytes(message), accept_crc_error=True)
     assert isinstance(result, codec.Heartbeat)
     assert result.length == 5
 

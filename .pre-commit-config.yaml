@@ -18,3 +18,13 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type checker
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+        # Note: Uses local hook until official ty pre-commit repo is available
+        # Track: https://github.com/astral-sh/ty/issues/269
