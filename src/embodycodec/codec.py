@@ -23,6 +23,7 @@ from embodycodec.exceptions import DecodeError
 
 
 T = TypeVar("T", bound="Message")
+AT = TypeVar("AT", bound="a.Attribute")
 
 
 @dataclass
@@ -234,6 +235,12 @@ class GetAttributeResponse(Message):
         attribute_part = self.value.encode()
         length_part = struct.pack(">B", len(attribute_part))
         return first_part_of_body + reporting_part + length_part + attribute_part
+
+    def value_as(self, attr_type: type[AT]) -> AT:
+        """Type-safe accessor for the attribute value with runtime type checking."""
+        if not isinstance(self.value, attr_type):
+            raise TypeError(f"Expected {attr_type.__name__}, got {type(self.value).__name__}")
+        return self.value
 
 
 @dataclass
