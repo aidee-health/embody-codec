@@ -71,18 +71,54 @@ def test_encode_decode_afe_settings_all() -> None:
                 cf_value=2,
                 ecg_gain=4,
                 ioffdac_range=0,
-                led1=6217,
-                led2=6217,
-                led3=6217,
-                led4=6217,
-                off_dac1=-463004,
-                off_dac2=-463003,
-                off_dac3=-463002,
+                led=[6217],
+                off_dac=[-463001],
                 relative_gain=51.78207015991211,
             )
         ),
-        b"\x05\x02\x04\x00\x00\x00\x18\x49\x00\x00\x18\x49\x00\x00\x18\x49\x00\x00\x18"
-        b"\x49\xff\xf8\xef\x64\xff\xf8\xef\x65\xff\xf8\xef\x66\x42\x4f\x20\xd7",
+        b"\x05\x02\x04\x00\x00\x00\x18\x49\xff\xf8\xef\x67\x42\x4f\x20\xd7",
+    )
+    do_test_encode_decode_attribute(
+        attributes.AfeSettingsAllAttribute(
+            value=types.AfeSettingsAll(
+                rf_gain=5,
+                cf_value=2,
+                ecg_gain=4,
+                ioffdac_range=0,
+                led=[6217, 6217],
+                off_dac=[-463002, -463001],
+                relative_gain=51.78207015991211,
+            )
+        ),
+        b"\x05\x02\x04\x00\x00\x00\x18\x49\x00\x00\x18\x49\xff\xf8\xef\x66\xff\xf8\xef\x67\x42\x4f\x20\xd7",
+    )
+    do_test_encode_decode_attribute(
+        attributes.AfeSettingsAllAttribute(
+            value=types.AfeSettingsAll(
+                rf_gain=5,
+                cf_value=2,
+                ecg_gain=4,
+                ioffdac_range=0,
+                led=[6217, 6217, 6217],
+                off_dac=[-463003, -463002, -463001],
+                relative_gain=51.78207015991211,
+            )
+        ),
+        b"\x05\x02\x04\x00\x00\x00\x18\x49\x00\x00\x18\x49\x00\x00\x18\x49\xff\xf8\xef\x65\xff\xf8\xef\x66\xff\xf8\xef\x67\x42\x4f\x20\xd7",
+    )
+    do_test_encode_decode_attribute(
+        attributes.AfeSettingsAllAttribute(
+            value=types.AfeSettingsAll(
+                rf_gain=5,
+                cf_value=2,
+                ecg_gain=4,
+                ioffdac_range=0,
+                led=[6217, 6217, 6217, 6217],
+                off_dac=[-463004, -463003, -463002, -463001],
+                relative_gain=51.78207015991211,
+            )
+        ),
+        b"\x05\x02\x04\x00\x00\x00\x18\x49\x00\x00\x18\x49\x00\x00\x18\x49\x00\x00\x18\x49\xff\xf8\xef\x64\xff\xf8\xef\x65\xff\xf8\xef\x66\xff\xf8\xef\x67\x42\x4f\x20\xd7",
     )
 
 
