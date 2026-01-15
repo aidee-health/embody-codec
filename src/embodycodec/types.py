@@ -294,6 +294,14 @@ class BatteryDiagnostics(ComplexType):
         )
 
 
+def flatten_deep(arbitrary_list):
+    for item in arbitrary_list:
+        if isinstance(item, list):
+            yield from flatten_deep(item)
+        else:
+            yield item
+
+
 @dataclass
 class AfeSettings(ComplexType):
     struct_format = ">BBBBIIif"
@@ -309,19 +317,94 @@ class AfeSettings(ComplexType):
 
 @dataclass
 class AfeSettingsAll(ComplexType):
-    struct_format = ">BBBBIIIIiiif"
+    struct_format = ""  # Overridden by subclasses again
     rf_gain: int | None
     cf_value: int | None
     ecg_gain: int | None
     ioffdac_range: int | None
-    led1: int | None
-    led2: int | None
-    led3: int | None
-    led4: int | None
-    off_dac1: int | None
-    off_dac2: int | None
-    off_dac3: int | None
+    led: list[int]
+    off_dac: list[int]
     relative_gain: float | None
+
+    subclasses = {}
+
+    @classmethod
+    def register(cls, key):
+        def wrapper(subclass):
+            cls.subclasses[key] = subclass
+            return subclass
+
+        return wrapper
+
+    def encode(self) -> bytes:
+        c = self.subclasses[4 + 4 * len(self.led) + 4 * len(self.off_dac) + 4]
+        return struct.pack(c.struct_format, *flatten_deep([*astuple(self)]))
+
+    @classmethod
+    def decode(cls: type["AfeSettingsAll"], data: bytes) -> "AfeSettingsAll":
+        target_class = AfeSettingsAll.subclasses.get(len(data))
+        if target_class:
+            return target_class.decode(data)
+
+        raise BufferError(
+            f"No AfeSettings definition found for length {len(data)}. "
+            f"Supported lengths: {list(AfeSettingsAll.subclasses.keys())}"
+        )
+
+
+@dataclass
+@AfeSettingsAll.register(4 + 8 * 0 + 4)
+class AfeSettings0(AfeSettingsAll):
+    struct_format = ">BBBBf"  # Only the shared header and trailing float
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [], [], raw[4])
+
+
+@dataclass
+@AfeSettingsAll.register(4 + 8 * 1 + 4)
+class AfeSettings1(AfeSettingsAll):
+    struct_format = ">BBBBIif"
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:5]], [*raw[5:6]], raw[6])
+
+
+@dataclass
+@AfeSettingsAll.register(4 + 8 * 2 + 4)
+class AfeSettings2(AfeSettingsAll):
+    struct_format = ">BBBBIIiif"
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:6]], [*raw[6:8]], raw[8])
+
+
+@dataclass
+@AfeSettingsAll.register(4 + 8 * 3 + 4)
+class AfeSettings3(AfeSettingsAll):
+    struct_format = ">BBBBIIIiiif"
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:7]], [*raw[7:10]], raw[10])
+
+
+@dataclass
+@AfeSettingsAll.register(4 + 8 * 4 + 4)
+class AfeSettings4(AfeSettingsAll):
+    struct_format = ">BBBBIIIIiiiif"
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:8]], [*raw[8:12]], raw[12])
 
 
 F = TypeVar("F", bound="File")

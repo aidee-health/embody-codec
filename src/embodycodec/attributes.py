@@ -179,13 +179,8 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
                     cf_value=None,
                     ecg_gain=None,
                     ioffdac_range=None,
-                    led1=None,
-                    led2=None,
-                    led3=None,
-                    led4=None,
-                    off_dac1=None,
-                    off_dac2=None,
-                    off_dac3=None,
+                    led=[],
+                    off_dac=[],
                     relative_gain=None,
                 )
             )
