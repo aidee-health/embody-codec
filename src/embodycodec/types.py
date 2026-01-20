@@ -6,7 +6,7 @@ from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
 from typing import TypeVar
-
+from embodycodec.exceptions import DecodeError
 
 class ExecuteCommandType(enum.Enum):
     RESET_DEVICE = 0x01
@@ -346,7 +346,7 @@ class AfeSettingsAll(ComplexType):
         if target_class:
             return target_class.decode(data)
 
-        raise BufferError(
+        raise DecodeError(
             f"No AfeSettings definition found for length {len(data)}. "
             f"Supported lengths: {list(AfeSettingsAll.subclasses.keys())}"
         )
@@ -405,6 +405,17 @@ class AfeSettings4(AfeSettingsAll):
     def decode(cls, data: bytes):
         raw = struct.unpack(cls.struct_format, data)
         return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:8]], [*raw[8:12]], raw[12])
+
+
+@dataclass
+#@AfeSettingsAll.register(4 + 4 * 4 + 4 * 3 + 4)  # Special broken version that somehow was 4 channel for led and 3 channels for offset
+class AfeSettingsBroken(AfeSettingsAll):
+    struct_format = ">BBBBIIIIiiif"
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], [*raw[4:8]], [*raw[8:11]], raw[11])
 
 
 F = TypeVar("F", bound="File")
