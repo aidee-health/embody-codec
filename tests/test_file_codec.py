@@ -31,10 +31,10 @@ def test_decode_afe_settings() -> None:
     assert 2 == afe_settings.two_lsb_of_timestamp
     assert 4 == afe_settings.ecg_gain
     assert 0 == afe_settings.ioffdac_range
-    assert -463002 == afe_settings.off_dac
+    assert -463002 == afe_settings.off_dac[0]
     assert 51.78207015991211 == afe_settings.relative_gain
-    assert 6217 == afe_settings.led1
-    assert 6217 == afe_settings.led4
+    assert 6217 == afe_settings.i_led[0]
+    assert 6217 == afe_settings.i_led[1]
     assert 2 == afe_settings.cf_value
 
 
@@ -48,13 +48,13 @@ def test_decode_afe_settings_all() -> None:
     assert 2 == afe_settings.cf_value
     assert 4 == afe_settings.ecg_gain
     assert 0 == afe_settings.ioffdac_range
-    assert 6217 == afe_settings.led1
-    assert 6217 == afe_settings.led2
-    assert 6217 == afe_settings.led3
-    assert 6217 == afe_settings.led4
-    assert -463004 == afe_settings.off_dac1
-    assert -463003 == afe_settings.off_dac2
-    assert -463002 == afe_settings.off_dac3
+    assert 6217 == afe_settings.i_led[0]
+    assert 6217 == afe_settings.i_led[1]
+    assert 6217 == afe_settings.i_led[2]
+    assert 6217 == afe_settings.i_led[3]
+    assert -463004 == afe_settings.off_dac[0]
+    assert -463003 == afe_settings.off_dac[1]
+    assert -463002 == afe_settings.off_dac[2]
     assert 51.78207015991211 == afe_settings.relative_gain
 
 

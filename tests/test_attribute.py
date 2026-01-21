@@ -51,11 +51,10 @@ def test_encode_decode_afe_settings() -> None:
             value=types.AfeSettings(
                 ecg_gain=4,
                 ioffdac_range=0,
-                off_dac=-463002,
+                off_dac=[-463002],
                 relative_gain=51.78207015991211,
                 rf_gain=2,
-                led1=6217,
-                led4=6217,
+                i_led=[6217, 6217],
                 cf_value=2,
             )
         ),
@@ -71,7 +70,7 @@ def test_encode_decode_afe_settings_all() -> None:
                 cf_value=2,
                 ecg_gain=4,
                 ioffdac_range=0,
-                led=[6217],
+                i_led=[6217],
                 off_dac=[-463001],
                 relative_gain=51.78207015991211,
             )
@@ -85,7 +84,7 @@ def test_encode_decode_afe_settings_all() -> None:
                 cf_value=2,
                 ecg_gain=4,
                 ioffdac_range=0,
-                led=[6217, 6217],
+                i_led=[6217, 6217],
                 off_dac=[-463002, -463001],
                 relative_gain=51.78207015991211,
             )
@@ -99,7 +98,7 @@ def test_encode_decode_afe_settings_all() -> None:
                 cf_value=2,
                 ecg_gain=4,
                 ioffdac_range=0,
-                led=[6217, 6217, 6217],
+                i_led=[6217, 6217, 6217],
                 off_dac=[-463003, -463002, -463001],
                 relative_gain=51.78207015991211,
             )
@@ -113,7 +112,7 @@ def test_encode_decode_afe_settings_all() -> None:
                 cf_value=2,
                 ecg_gain=4,
                 ioffdac_range=0,
-                led=[6217, 6217, 6217, 6217],
+                i_led=[6217, 6217, 6217, 6217],
                 off_dac=[-463004, -463003, -463002, -463001],
                 relative_gain=51.78207015991211,
             )
