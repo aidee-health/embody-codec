@@ -1,12 +1,16 @@
 """Complex types for the EmBody device"""
 
+from __future__ import annotations
+
 import enum
 import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
 from typing import TypeVar
+from typing import ClassVar
 from embodycodec.exceptions import DecodeError
+
 
 class ExecuteCommandType(enum.Enum):
     RESET_DEVICE = 0x01
@@ -110,7 +114,7 @@ class PulseRawList(ComplexType):
         return self.len
 
     @classmethod
-    def decode(cls, data: bytes) -> "PulseRawList":
+    def decode(cls, data: bytes) -> PulseRawList:
         if len(data) < 10:
             raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
         (tick,) = struct.unpack("<H", data[0:2])
@@ -183,7 +187,7 @@ class SystemStatus(ComplexType):
     worst: list[SystemStatusType]
 
     @classmethod
-    def decode(cls, data: bytes) -> "SystemStatus":
+    def decode(cls, data: bytes) -> SystemStatus:
         if len(data) < 1:
             raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 1 bytes")
         status = []
@@ -309,10 +313,17 @@ class AfeSettings(ComplexType):
     cf_value: int
     ecg_gain: int
     ioffdac_range: int
-    led1: int
-    led4: int
-    off_dac: int
+    i_led: list[int]
+    off_dac: list[int]
     relative_gain: float
+
+    def encode(self) -> bytes:
+        return struct.pack(self.struct_format, *flatten_deep([*astuple(self)]))
+
+    @classmethod
+    def decode(cls, data: bytes):
+        raw = struct.unpack(cls.struct_format, data)
+        return AfeSettings(raw[0], raw[1], raw[2], raw[3], [*raw[4:6]], [*raw[6:7]], raw[7])
 
 
 @dataclass
@@ -322,11 +333,11 @@ class AfeSettingsAll(ComplexType):
     cf_value: int | None
     ecg_gain: int | None
     ioffdac_range: int | None
-    led: list[int]
+    i_led: list[int]
     off_dac: list[int]
     relative_gain: float | None
 
-    subclasses = {}
+    subclasses: ClassVar[dict[int, type[AfeSettingsAll]]] = {}
 
     @classmethod
     def register(cls, key):
@@ -337,11 +348,11 @@ class AfeSettingsAll(ComplexType):
         return wrapper
 
     def encode(self) -> bytes:
-        c = self.subclasses[4 + 4 * len(self.led) + 4 * len(self.off_dac) + 4]
+        c = self.subclasses[4 + 4 * len(self.i_led) + 4 * len(self.off_dac) + 4]
         return struct.pack(c.struct_format, *flatten_deep([*astuple(self)]))
 
     @classmethod
-    def decode(cls: type["AfeSettingsAll"], data: bytes) -> "AfeSettingsAll":
+    def decode(cls: type[AfeSettingsAll], data: bytes) -> AfeSettingsAll:
         target_class = AfeSettingsAll.subclasses.get(len(data))
         if target_class:
             return target_class.decode(data)
@@ -408,7 +419,7 @@ class AfeSettings4(AfeSettingsAll):
 
 
 @dataclass
-#@AfeSettingsAll.register(4 + 4 * 4 + 4 * 3 + 4)  # Special broken version that somehow was 4 channel for led and 3 channels for offset
+# @AfeSettingsAll.register(4 + 4 * 4 + 4 * 3 + 4)  # Special broken version that somehow was 4 channel for led and 3 channels for offset
 class AfeSettingsBroken(AfeSettingsAll):
     struct_format = ">BBBBIIIIiiif"
 
