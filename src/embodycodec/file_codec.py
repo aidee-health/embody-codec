@@ -142,9 +142,9 @@ class AfeSettings(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x07)
 class AfeSettingsAll(TimetickedMessage):
     payload_format = ">BBBBIIIIiiif"
+    message_id = 0x07
     rf_gain: int
     cf_value: int
     ecg_gain: int
@@ -174,9 +174,9 @@ class AfeSettingsAll(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x09)
 class AfeSettings0(TimetickedMessage):
     payload_format = ">BBBBf"
+    message_id = 0x09
 
     @classmethod
     def decode(cls, data: bytes):
@@ -185,9 +185,9 @@ class AfeSettings0(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x0A)
 class AfeSettings1(TimetickedMessage):
     payload_format = ">BBBBIif"
+    message_id = 0x0A
 
     @classmethod
     def decode(cls, data: bytes):
@@ -196,9 +196,9 @@ class AfeSettings1(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x0B)
 class AfeSettings2(TimetickedMessage):
     payload_format = ">BBBBIIiif"
+    message_id = 0x0B
 
     @classmethod
     def decode(cls, data: bytes):
@@ -207,9 +207,9 @@ class AfeSettings2(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x0C)
 class AfeSettings3(TimetickedMessage):
     payload_format = ">BBBBIIIiiif"
+    message_id = 0x0C
 
     @classmethod
     def decode(cls, data: bytes):
@@ -218,9 +218,9 @@ class AfeSettings3(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0x0D)
 class AfeSettings4(TimetickedMessage):
     payload_format = ">BBBBIIIIiiiif"
+    message_id = 0x0D
 
     @classmethod
     def decode(cls, data: bytes):
@@ -229,8 +229,8 @@ class AfeSettings4(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xB1)
 class PpgRaw(TimetickedMessage):
+    message_id = 0xB1
     ecg: int
     ppg: int
 
@@ -250,8 +250,8 @@ class PpgRaw(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xA2)
 class PpgRawAll(TimetickedMessage):
+    message_id = 0xA2
     ecg: int
     ppg: int
     ppg_red: int
@@ -275,9 +275,9 @@ class PpgRawAll(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xAC)
 class ImuRaw(TimetickedMessage):
     payload_format = ">hhhhhh"
+    message_id = 0xAC
     acc_x: int = 0
     acc_y: int = 0
     acc_z: int = 0
@@ -287,76 +287,76 @@ class ImuRaw(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xA4)
 class Imu(TimetickedMessage):
     payload_format = ">B"
+    message_id = 0xA4
     orientation_and_activity: int
 
 
 @dataclass
-@ProtocolMessage.register(0xB2)
 class AccRaw(TimetickedMessage):
     payload_format = ">hhh"
+    message_id = 0xB2
     acc_x: int = 0
     acc_y: int = 0
     acc_z: int = 0
 
 
 @dataclass
-@ProtocolMessage.register(0xB3)
 class GyroRaw(TimetickedMessage):
     payload_format = ">hhh"
+    message_id = 0xB3
     gyr_x: int = 0
     gyr_y: int = 0
     gyr_z: int = 0
 
 
 @dataclass
-@ProtocolMessage.register(0xA1)
 class BatteryLevel(TimetickedMessage):
     payload_format = ">B"
+    message_id = 0xA1
     level: int
 
 
 @dataclass
-@ProtocolMessage.register(0xA5)
 class HeartRate(TimetickedMessage):
     payload_format = ">H"
+    message_id = 0xA5
     rate: int
 
 
 @dataclass
-@ProtocolMessage.register(0xAD)
 class HeartRateInterval(TimetickedMessage):
     payload_format = ">H"
+    message_id = 0xAD
     interval: int
 
 
 @dataclass
-@ProtocolMessage.register(0x74)
 class NoOfPpgValues(TimetickedMessage):
     payload_format = ">B"
+    message_id = 0x74
     ppg_values: int
 
 
 @dataclass
-@ProtocolMessage.register(0xA9)
 class ChargeState(TimetickedMessage):
     payload_format = ">B"
+    message_id = 0xA9
     state: int
 
 
 @dataclass
-@ProtocolMessage.register(0xAA)
 class BeltOnBody(TimetickedMessage):
     payload_format = ">B"
+    message_id = 0xAA
     on_body: int
 
 
 @dataclass
-@ProtocolMessage.register(0xB4)
 class Temperature(TimetickedMessage):
     payload_format = ">h"
+    message_id = 0xB4
     temp_raw: int
 
     def temp_celsius(self) -> float:
@@ -364,8 +364,8 @@ class Temperature(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xB6)
 class PulseRawList(TimetickedMessage):
+    message_id = 0xB6
     format: int
     no_of_ecgs: int
     no_of_ppgs: int
@@ -423,8 +423,8 @@ class PulseRawList(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xB8)
 class PulseBlockEcg(TimetickedMessage):
+    message_id = 0xB8
     time: int
     channel: int
     num_samples: int
@@ -473,8 +473,8 @@ class PulseBlockEcg(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xB9)
 class PulseBlockPpg(TimetickedMessage):
+    message_id = 0xB9
     time: int
     channel: int
     num_samples: int
@@ -522,9 +522,9 @@ class PulseBlockPpg(TimetickedMessage):
 
 
 @dataclass
-@ProtocolMessage.register(0xBB)
 class BatteryDiagnostics(TimetickedMessage):
     payload_format = "<IIHHhhHHHH"
+    message_id = 0xBB
     ttf: int  # s Time To Full
     tte: int  # s Time To Empty
     voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
@@ -591,13 +591,13 @@ def decode_message(data: bytes, version: tuple[int, int, int] | None = None) -> 
     # Special handling for version-dependent AfeSettings
     if message_type == 0x06:
         if isinstance(version, tuple) and version >= (4, 0, 1):
-            return AfeSettings.decode(data[1:], version)
+            return AfeSettings.decode(data, version)
         else:
-            return AfeSettingsOld.decode(data[1:], version)
+            return AfeSettingsOld.decode(data, version)
 
     # Lookup message class from registry
-    message_class = ProtocolMessage.subclasses.get(message_type)
+    message_class = ProtocolMessage.registry.get(message_type)
     if message_class is None:
         raise LookupError(f"Unknown message type {hex(message_type)}")
 
-    return message_class.decode(data[1:], version)
+    return message_class.decode(data, version)
