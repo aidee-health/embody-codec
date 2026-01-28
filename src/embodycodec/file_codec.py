@@ -13,6 +13,7 @@ from __future__ import annotations
 import struct
 from dataclasses import astuple
 from dataclasses import dataclass
+from dataclasses import field
 from typing import ClassVar
 from embodycodec.exceptions import DecodeError
 
@@ -24,24 +25,31 @@ TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
 @dataclass
 class ProtocolMessage:
     # unpack format to be overridden by sub-classes, see https://docs.python.org/3/library/struct.html#format-characters
-    unpack_format = ""
+    unpack_format: ClassVar[str] = ""
 
-    subclasses: ClassVar[dict[int, type[ProtocolMessage]]] = {}
+    registry: ClassVar[dict[int, type[ProtocolMessage]]] = {}
+    message_id: ClassVar[int | None] = None  # Safe sentinel
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Only register concrete classes that have a valid ID assigned
+        if cls.message_id is not None:
+            ProtocolMessage.registry[cls.message_id] = cls
 
     @classmethod
-    def register(cls, key):
-        def wrapper(subclass):
-            cls.subclasses[key] = subclass
-            return subclass
-
-        return wrapper
+    def get_header_size(cls) -> int:
+        """Minimum bytes needed to calculate the total packet size."""
+        # Default: 1 (ID)
+        return 1
 
     @classmethod
-    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
-        return struct.calcsize(cls.unpack_format)
-
-    def length(self, version: tuple[int, int, int] | None = None) -> int:
-        return self.__class__.default_length(version)
+    def get_expected_length(cls, header_data: bytes) -> int:
+        """
+        Calculates total length based on header peeking.
+        header_data starts at the Timestamp (ID is already stripped).
+        """
+        # Default for fixed-length messages
+        return 1 + 2 + struct.calcsize(cls.payload_format)
 
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
@@ -52,15 +60,20 @@ class ProtocolMessage:
 
 @dataclass
 class TimetickedMessage(ProtocolMessage):
-    two_lsb_of_timestamp: int  # Dataclass variable now, format contains it and format can decode it. Inits as part of the rest in subclasses.
+    # This class still has message_id = None, so it won't be registered
+    unpack_format: ClassVar[str] = ">H"
+
+    # None is the safe sentinel for 'not yet decoded'
+    two_lsb_of_timestamp: int | None = field(init=False, default=None)
 
     @classmethod
-    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
-        if len(data) < cls.default_length(version):
-            raise BufferError("Buffer too short for message")
-        tuples = struct.unpack(cls.unpack_format, data[0 : cls.default_length(version)])
-        msg = cls(*tuples)
-        return msg
+    def decode(cls, data: bytes) -> TimetickedMessage:
+        timestamp = struct.unpack(">H", data[:2])[0]
+        return cls._decode_payload(timestamp, data[2:])
+
+    def encode(self) -> bytes:
+        header = struct.pack(">H", self.two_lsb_of_timestamp)
+        return header + self._encode_payload()
 
 
 @dataclass
@@ -77,7 +90,7 @@ class Header(ProtocolMessage):
 @dataclass
 @ProtocolMessage.register(0x71)
 class Timestamp(TimetickedMessage):
-    unpack_format = ">HQ"
+    payload_format = ">Q"
     current_time: int
 
 
@@ -91,7 +104,7 @@ def flatten_deep(arbitrary_list):
 
 @dataclass
 class AfeSettingsOld(TimetickedMessage):
-    unpack_format = ">Hbbbdddd"
+    payload_format = ">bbbdddd"
     rf_gain: int
     cf_values: int
     ecg_gain: int
@@ -110,7 +123,7 @@ class AfeSettingsOld(TimetickedMessage):
 
 @dataclass
 class AfeSettings(TimetickedMessage):
-    unpack_format = ">HBBBBIIif"
+    payload_format = ">BBBBIIif"
     rf_gain: int
     cf_value: int
     ecg_gain: int
@@ -131,7 +144,7 @@ class AfeSettings(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0x07)
 class AfeSettingsAll(TimetickedMessage):
-    unpack_format = ">HBBBBIIIIiiif"
+    payload_format = ">BBBBIIIIiiif"
     rf_gain: int
     cf_value: int
     ecg_gain: int
@@ -152,66 +165,66 @@ class AfeSettingsAll(TimetickedMessage):
 
     def encode(self) -> bytes:
         c = self.subclasses[4 + 4 * len(self.i_led) + 4 * len(self.off_dac) + 4]
-        return struct.pack(c.unpack_format, *flatten_deep([*astuple(self)]))
+        return struct.pack(c.payload_format, *flatten_deep([*astuple(self)]))
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettingsAll(raw[0], raw[1], raw[2], raw[3], raw[4], [*raw[5:9]], [*raw[9:12]], raw[12])
 
 
 @dataclass
 @ProtocolMessage.register(0x09)
 class AfeSettings0(TimetickedMessage):
-    unpack_format = ">HBBBBf"
+    payload_format = ">BBBBf"
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettings0(raw[0], raw[1], raw[2], raw[3], raw[4], [], [], raw[5])
 
 
 @dataclass
 @ProtocolMessage.register(0x0A)
 class AfeSettings1(TimetickedMessage):
-    unpack_format = ">HBBBBIif"
+    payload_format = ">BBBBIif"
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettings1(raw[0], raw[1], raw[2], raw[3], raw[4], [*raw[5:6]], [*raw[6:7]], raw[7])
 
 
 @dataclass
 @ProtocolMessage.register(0x0B)
 class AfeSettings2(TimetickedMessage):
-    unpack_format = ">HBBBBIIiif"
+    payload_format = ">BBBBIIiif"
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettings2(raw[0], raw[1], raw[2], raw[3], raw[4], [*raw[5:7]], [*raw[7:9]], raw[9])
 
 
 @dataclass
 @ProtocolMessage.register(0x0C)
 class AfeSettings3(TimetickedMessage):
-    unpack_format = ">HBBBBIIIiiif"
+    payload_format = ">BBBBIIIiiif"
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettings3(raw[0], raw[1], raw[2], raw[3], raw[4], [*raw[5:8]], [*raw[8:11]], raw[11])
 
 
 @dataclass
 @ProtocolMessage.register(0x0D)
 class AfeSettings4(TimetickedMessage):
-    unpack_format = ">HBBBBIIIIiiiif"
+    payload_format = ">BBBBIIIIiiiif"
 
     @classmethod
     def decode(cls, data: bytes):
-        raw = struct.unpack(cls.unpack_format, data)
+        raw = struct.unpack(cls.payload_format, data)
         return AfeSettings4(raw[0], raw[1], raw[2], raw[3], raw[4], [*raw[5:9]], [*raw[9:13]], raw[13])
 
 
@@ -264,7 +277,7 @@ class PpgRawAll(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0xAC)
 class ImuRaw(TimetickedMessage):
-    unpack_format = ">Hhhhhhh"
+    payload_format = ">hhhhhh"
     acc_x: int = 0
     acc_y: int = 0
     acc_z: int = 0
@@ -276,14 +289,14 @@ class ImuRaw(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0xA4)
 class Imu(TimetickedMessage):
-    unpack_format = ">HB"
+    payload_format = ">B"
     orientation_and_activity: int
 
 
 @dataclass
 @ProtocolMessage.register(0xB2)
 class AccRaw(TimetickedMessage):
-    unpack_format = ">Hhhh"
+    payload_format = ">hhh"
     acc_x: int = 0
     acc_y: int = 0
     acc_z: int = 0
@@ -292,7 +305,7 @@ class AccRaw(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0xB3)
 class GyroRaw(TimetickedMessage):
-    unpack_format = ">Hhhh"
+    payload_format = ">hhh"
     gyr_x: int = 0
     gyr_y: int = 0
     gyr_z: int = 0
@@ -301,49 +314,49 @@ class GyroRaw(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0xA1)
 class BatteryLevel(TimetickedMessage):
-    unpack_format = ">HB"
+    payload_format = ">B"
     level: int
 
 
 @dataclass
 @ProtocolMessage.register(0xA5)
 class HeartRate(TimetickedMessage):
-    unpack_format = ">HH"
+    payload_format = ">H"
     rate: int
 
 
 @dataclass
 @ProtocolMessage.register(0xAD)
 class HeartRateInterval(TimetickedMessage):
-    unpack_format = ">HH"
+    payload_format = ">H"
     interval: int
 
 
 @dataclass
 @ProtocolMessage.register(0x74)
 class NoOfPpgValues(TimetickedMessage):
-    unpack_format = ">HB"
+    payload_format = ">B"
     ppg_values: int
 
 
 @dataclass
 @ProtocolMessage.register(0xA9)
 class ChargeState(TimetickedMessage):
-    unpack_format = ">HB"
+    payload_format = ">B"
     state: int
 
 
 @dataclass
 @ProtocolMessage.register(0xAA)
 class BeltOnBody(TimetickedMessage):
-    unpack_format = ">HB"
+    payload_format = ">B"
     on_body: int
 
 
 @dataclass
 @ProtocolMessage.register(0xB4)
 class Temperature(TimetickedMessage):
-    unpack_format = ">Hh"
+    payload_format = ">h"
     temp_raw: int
 
     def temp_celsius(self) -> float:
@@ -445,6 +458,7 @@ class PulseBlockEcg(TimetickedMessage):
             samples.append(sample)
             pos += 2
         msg = PulseBlockEcg(
+            two_lsb_of_timestamp=tick,
             time=time,
             channel=channel,
             num_samples=packed_ecgs + 1,
@@ -510,7 +524,7 @@ class PulseBlockPpg(TimetickedMessage):
 @dataclass
 @ProtocolMessage.register(0xBB)
 class BatteryDiagnostics(TimetickedMessage):
-    struct_format = "<IIHHhhHHHH"
+    payload_format = "<IIHHhhHHHH"
     ttf: int  # s Time To Full
     tte: int  # s Time To Empty
     voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
@@ -525,7 +539,7 @@ class BatteryDiagnostics(TimetickedMessage):
 
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
-        return struct.calcsize(cls.struct_format)
+        return struct.calcsize(cls.payload_format)
 
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
