@@ -1,11 +1,11 @@
 [project]
 name = "embody-codec"
-version = "1.0.39"
+version = "1.0.40"
 description = "Embody Codec"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 classifiers = ["Development Status :: 5 - Production/Stable"]
 
 [project.urls]
@@ -17,8 +17,8 @@ Repository = "https://github.com/aidee-health/embody-codec"
 [dependency-groups]
 dev = [
     "pytest>=7.2.0",
-    "ruff>=0.11.5",
-    "ty>=0.0.2",
+    "ruff>=0.15.15",
+    "ty>=0.0.42",
     "pre-commit>=2.16.0",
     "pre-commit-hooks>=4.1.0",
 ]
@@ -44,13 +44,8 @@ source = ["embodycodec", "tests"]
 show_missing = true
 fail_under = 2
 
-[tool.isort]
-profile = "black"
-force_single_line = true
-lines_after_imports = 2
-
 [tool.ty.environment]
-python-version = "3.11"  # Matches project requires-python
+python-version = "3.12"  # Matches project requires-python
 
 [tool.ty.rules]
 # Core type safety rules (stricter than previous mypy configuration)
@@ -62,14 +57,14 @@ call-non-callable = "error"         # Catch calling non-functions
 # Additional strictness
 deprecated = "warn"                 # Warn on deprecated usage
 redundant-cast = "warn"            # Catch unnecessary casts
-# Future consideration: Enable more strict rules after team is comfortable
+missing-override-decorator = "error"  # Require @override on overriding methods (catches signature drift)
 
 [tool.ty.terminal]
 output-format = "full"             # Provides detailed error messages with full context
-error-on-warning = false           # Don't fail on warnings initially
+error-on-warning = true            # Treat warnings (deprecated, redundant-cast) as failures
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
@@ -87,6 +82,7 @@ select = [
     "RUF",  # Ruff-specific rules
     "PTH",  # use pathlib
     "PL",   # Pylint
+    "PIE",  # flake8-pie
 ]
 ignore = [
     "E203",   # Whitespace before ':'
@@ -102,10 +98,7 @@ ignore = [
     "D101",   # Missing docstring in public class
     "B024",   # Abstract class with no abstract methods
     "B905",   # zip() without an explicit strict= parameter
-    "F401",   # Unused imports
     "PLR2004", # Magic value used in comparison
-    "I001",   # isort: skip
-    "PTH123", # pathlib: skip
     "RUF012", # mutable-class-default
     "PLR0911", # Too many return statements
     "PLR0912", # Too many branches
@@ -114,6 +107,10 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-after-imports = 2
 
 [tool.ruff.lint.mccabe]
 max-complexity = 50

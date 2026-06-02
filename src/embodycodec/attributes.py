@@ -11,12 +11,14 @@ import struct
 from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
-from datetime import datetime
 from datetime import UTC
+from datetime import datetime
 from typing import Any
 from typing import TypeVar
+from typing import override
 
 from embodycodec import types as t
+
 
 # Temperature sensor conversion factor (degrees Celsius per raw unit)
 # This factor converts raw sensor values to degrees Celsius
@@ -66,14 +68,17 @@ class ZeroTerminatedStringAttribute(Attribute, ABC):
 
     value: str
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "ZeroTerminatedStringAttribute":
         attr = cls((data[0 : len(data)]).decode("ascii"))
         return attr
 
+    @override
     def encode(self) -> bytes:
         return bytes(self.value, "ascii")
 
+    @override
     def formatted_value(self) -> str | None:
         return self.value
 
@@ -85,6 +90,7 @@ CT = TypeVar("CT", bound="ComplexTypeAttribute")
 class ComplexTypeAttribute(Attribute, ABC):
     value: t.ComplexType
 
+    @override
     @classmethod
     def decode(cls: type[CT], data: bytes) -> CT:
         value_type = cls.__annotations__["value"]
@@ -93,9 +99,11 @@ class ComplexTypeAttribute(Attribute, ABC):
         attr = cls(value_type.decode(data))
         return attr
 
+    @override
     def encode(self) -> bytes:
         return self.value.encode()
 
+    @override
     def formatted_value(self) -> str | None:
         return str(self.value)
 
@@ -106,6 +114,7 @@ class SerialNoAttribute(Attribute):
     attribute_id = 0x01
     value: int
 
+    @override
     def formatted_value(self) -> str | None:
         return self.value.to_bytes(8, "big", signed=True).hex().upper() if self.value else None
 
@@ -115,6 +124,7 @@ class FirmwareVersionAttribute(Attribute):
     attribute_id = 0x02
     value: int
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "FirmwareVersionAttribute":
         if len(data) < cls.length():
@@ -124,13 +134,16 @@ class FirmwareVersionAttribute(Attribute):
             )
         return FirmwareVersionAttribute(int.from_bytes(data[0:3], byteorder="big", signed=False))
 
+    @override
     def encode(self) -> bytes:
         return int.to_bytes(self.value, length=3, byteorder="big", signed=True)
 
+    @override
     @classmethod
     def length(cls) -> int:
         return 3
 
+    @override
     def formatted_value(self) -> str | None:
         newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True)
         return ".".join(str(newval[i]).zfill(2) for i in range(0, len(newval), 1))
@@ -142,6 +155,7 @@ class BluetoothMacAttribute(Attribute):
     attribute_id = 0x03
     value: int
 
+    @override
     def formatted_value(self) -> str | None:
         return self.value.to_bytes(8, "big", signed=True).hex() if self.value else None
 
@@ -169,6 +183,7 @@ class AfeSettingsAllAttribute(ComplexTypeAttribute):
     attribute_id = 0x07
     value: t.AfeSettingsAll
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "AfeSettingsAllAttribute":
         """Special handling. certain versions of the device returns an empty attribute value."""
@@ -197,6 +212,7 @@ class SystemStatusNamesAttribute(Attribute):
     attribute_id = 0x08
     value: list[str]
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatusNamesAttribute":
         if len(data) == 0:
@@ -204,6 +220,7 @@ class SystemStatusNamesAttribute(Attribute):
         string = data.decode("utf-8")
         return SystemStatusNamesAttribute(value=string.split(","))
 
+    @override
     def encode(self) -> bytes:
         body = b""
         for n in self.value[:-1]:
@@ -217,12 +234,14 @@ class SystemStatusAttribute(ComplexTypeAttribute):
     attribute_id = 0xC3
     value: t.SystemStatus
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatusAttribute":
         if len(data) == 0:
             return SystemStatusAttribute(value=t.SystemStatus(status=[], worst=[]))
         return SystemStatusAttribute(value=t.SystemStatus.decode(data))
 
+    @override
     def encode(self) -> bytes:
         return self.value.encode()
 
@@ -236,6 +255,7 @@ class CurrentTimeAttribute(Attribute):
     def get_datetime(self) -> datetime:
         return datetime.fromtimestamp(self.value / 1000, tz=UTC)
 
+    @override
     def formatted_value(self) -> str | None:
         return self.get_datetime().replace(microsecond=0).isoformat()
 
@@ -396,6 +416,7 @@ class TemperatureAttribute(Attribute):
     def temp_celsius(self) -> float:
         return self.value * TEMPERATURE_SCALE_FACTOR
 
+    @override
     def formatted_value(self) -> str | None:
         return str(self.temp_celsius())
 
@@ -460,6 +481,7 @@ class LedsAttribute(Attribute):
     def led3_blinking(self) -> bool:
         return bool(self.value & 0b100000)
 
+    @override
     def formatted_value(self) -> str | None:
         if not self.value:
             return None

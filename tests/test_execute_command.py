@@ -1,6 +1,7 @@
 """Test ExecuteCommand and ExecuteCommandResponse edge cases."""
 
 import pytest
+
 from embodycodec import codec
 
 
