@@ -6,6 +6,7 @@ from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
 from typing import TypeVar
+from typing import override
 
 
 class ExecuteCommandType(enum.Enum):
@@ -106,9 +107,11 @@ class PulseRawList(ComplexType):
     ppgs: list[int]
     len = 0
 
+    @override
     def length(self) -> int:
         return self.len
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "PulseRawList":
         if len(data) < 10:
@@ -139,6 +142,7 @@ class PulseRawList(ComplexType):
         msg.len = 1 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
         return msg
 
+    @override
     def encode(self) -> bytes:
         format_and_length = PulseRawList.from_format_and_lengths(self.format, self.no_of_ecgs, self.no_of_ppgs)
         bytes_per_ecg_and_ppg = 1 if self.format == 0 else 2 if self.format == 1 else 3 if self.format == 2 else 4
@@ -182,6 +186,7 @@ class SystemStatus(ComplexType):
     status: list[SystemStatusType]
     worst: list[SystemStatusType]
 
+    @override
     @classmethod
     def decode(cls, data: bytes) -> "SystemStatus":
         if len(data) < 1:
@@ -196,6 +201,7 @@ class SystemStatus(ComplexType):
             worst=worst,
         )
 
+    @override
     def encode(self) -> bytes:
         payload = b""
         for n in range(len(self.status)):
@@ -332,6 +338,7 @@ class File(ComplexType):
     struct_format = ">26s"
     file_name: str | bytes
 
+    @override
     @classmethod
     def decode(cls: type[F], data: bytes) -> F:
         msg = cls(*(struct.unpack(cls.struct_format, data[0 : cls.default_length()])))
@@ -339,6 +346,7 @@ class File(ComplexType):
             msg.file_name = msg.file_name.split(b"\x00", maxsplit=1)[0].decode("utf-8")
         return msg
 
+    @override
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, str(self.file_name).encode("utf-8"))
 
@@ -348,5 +356,6 @@ class FileWithLength(File):
     struct_format = File.struct_format + "I"
     file_size: int
 
+    @override
     def encode(self) -> bytes:
         return struct.pack(self.struct_format, str(self.file_name).encode("utf-8"), self.file_size)

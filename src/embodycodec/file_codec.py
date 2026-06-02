@@ -10,6 +10,8 @@ Temperature conversions use the TEMPERATURE_SCALE_FACTOR constant (0.0078125 = 1
 
 import struct
 from dataclasses import dataclass
+from typing import override
+
 
 # Temperature sensor conversion factor (degrees Celsius per raw unit)
 # This factor converts raw sensor values to degrees Celsius
@@ -39,6 +41,7 @@ class ProtocolMessage:
 class TimetickedMessage(ProtocolMessage):
     two_lsb_of_timestamp = None  # Dataclass workaround. Not specified with type to avoid having it as a dataclass field
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
@@ -112,10 +115,12 @@ class PpgRaw(TimetickedMessage):
     ecg: int
     ppg: int
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return 8
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
@@ -135,10 +140,12 @@ class PpgRawAll(TimetickedMessage):
     ppg_red: int
     ppg_ir: int
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return 11
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):
@@ -240,14 +247,17 @@ class PulseRawList(TimetickedMessage):
     ppgs: list[int]
     len: int = 6  # actual length, since this is instance specific, not static
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 6
 
+    @override
     def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.len
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < 3:
@@ -297,14 +307,17 @@ class PulseBlockEcg(TimetickedMessage):
     samples: list[int]
     pkg_length: int
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 14
 
+    @override
     def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.pkg_length
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockEcg":
         if len(data) < 14:
@@ -345,14 +358,17 @@ class PulseBlockPpg(TimetickedMessage):
     samples: list[int]
     pkg_length: int
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         """Return a dummy value, since this is instance specific for this class."""
         return 14
 
+    @override
     def length(self, version: tuple[int, int, int] | None = None) -> int:
         return self.pkg_length
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockPpg":
         if len(data) < 13:
@@ -400,10 +416,12 @@ class BatteryDiagnostics(TimetickedMessage):
     repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
 
+    @override
     @classmethod
     def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
         return struct.calcsize(cls.struct_format)
 
+    @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < cls.default_length(version):

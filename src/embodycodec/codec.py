@@ -14,6 +14,7 @@ from abc import ABC
 from dataclasses import astuple
 from dataclasses import dataclass
 from typing import TypeVar
+from typing import override
 
 from embodycodec import attributes as a
 from embodycodec import types as t
@@ -168,6 +169,7 @@ class SetAttribute(Message):
     attribute_id: int
     value: a.Attribute
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "SetAttribute":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -182,6 +184,7 @@ class SetAttribute(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">B", self.attribute_id)
         length_part = struct.pack(">B", self.value.length())
@@ -209,6 +212,7 @@ class GetAttributeResponse(Message):
     reporting: t.Reporting
     value: a.Attribute
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetAttributeResponse":
         crc, data_length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -229,6 +233,7 @@ class GetAttributeResponse(Message):
         msg.length = data_length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">BQ", self.attribute_id, self.changed_at)
         reporting_part = self.reporting.encode()
@@ -261,6 +266,7 @@ class ConfigureReporting(Message):
     attribute_id: int
     reporting: t.Reporting
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ConfigureReporting":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -272,6 +278,7 @@ class ConfigureReporting(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">B", self.attribute_id)
         reporting_part = self.reporting.encode()
@@ -282,6 +289,7 @@ class ConfigureReporting(Message):
 class ConfigureReportingResponse(Message):
     msg_type = 0x94
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ConfigureReportingResponse":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -308,6 +316,7 @@ class PeriodicRecording(Message):
     msg_type = 0x16
     recording: t.Recording
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "PeriodicRecording":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -318,6 +327,7 @@ class PeriodicRecording(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         return self.recording.encode()
 
@@ -334,6 +344,7 @@ class AttributeChanged(Message):
     attribute_id: int
     value: a.Attribute
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "AttributeChanged":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -347,6 +358,7 @@ class AttributeChanged(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">QB", self.changed_at, self.attribute_id)
         attribute_part = self.value.encode()
@@ -365,6 +377,7 @@ class RawPulseChanged(Message):
     changed_at: int
     value: t.PulseRawAll | t.PulseRaw
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "RawPulseChanged":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -373,7 +386,7 @@ class RawPulseChanged(Message):
         (changed_at,) = struct.unpack(">H", data[pos + 0 : pos + 2])
         # Determine if payload contains 1 or 3 PPGs
         if length - header_crc == t.PulseRawAll.default_length():
-            value = t.PulseRawAll.decode(data[pos + 2 :])  # type: Union[t.PulseRawAll, t.PulseRaw]
+            value = t.PulseRawAll.decode(data[pos + 2 :])  # type: t.PulseRawAll | t.PulseRaw
         else:
             value = t.PulseRaw.decode(data[pos + 2 :])
         msg = RawPulseChanged(changed_at=changed_at, value=value)
@@ -381,6 +394,7 @@ class RawPulseChanged(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">H", self.changed_at)
         raw_pulse_part = self.value.encode()
@@ -398,6 +412,7 @@ class RawPulseListChanged(Message):
     attribute_id: int
     value: a.PulseRawListAttribute
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "RawPulseListChanged":
         (crc, length) = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -409,6 +424,7 @@ class RawPulseListChanged(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">B", self.attribute_id)
         raw_pulse_part = self.value.encode()
@@ -450,6 +466,7 @@ class ListFilesResponse(Message):
     msg_type = 0xC1
     files: list[t.FileWithLength]
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ListFilesResponse":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -465,6 +482,7 @@ class ListFilesResponse(Message):
                 pos += t.FileWithLength.default_length()
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         body = b""
         if self.files is None or len(self.files) == 0:
@@ -484,6 +502,7 @@ class FileDataChunk(Message):
     offset: int = 0
     file_data: bytes = b""
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "FileDataChunk":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -499,6 +518,7 @@ class FileDataChunk(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         data_hdr = struct.pack(self.struct_format, self.fileref, self.offset)
         return data_hdr + self.file_data
@@ -509,6 +529,7 @@ class GetFile(Message):
     msg_type = 0x42
     file: t.File
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetFile":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -519,6 +540,7 @@ class GetFile(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         return self.file.encode()
 
@@ -536,6 +558,7 @@ class SendFile(Message):
     total_parts: int
     payload: bytes
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "SendFile":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -555,6 +578,7 @@ class SendFile(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         body = self.file_name.encode()
         body += struct.pack(">H", self.index)
@@ -575,6 +599,7 @@ class DeleteFile(Message):
     msg_type = 0x44
     file: t.File
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "DeleteFile":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -585,6 +610,7 @@ class DeleteFile(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         return self.file.encode()
 
@@ -599,6 +625,7 @@ class GetFileUart(Message):
     msg_type = 0x45
     file: t.File
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "GetFileUart":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -609,6 +636,7 @@ class GetFileUart(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         return self.file.encode()
 
@@ -663,6 +691,7 @@ class ExecuteCommand(Message):
     def command_message(self) -> str | None:
         return self.command_types.get(self.command_id)
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ExecuteCommand":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -675,6 +704,7 @@ class ExecuteCommand(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         if self.command_id == t.ExecuteCommandType.PRESS_BUTTON.value:
             attribute_part = struct.pack(">B", self.command_id)
@@ -769,6 +799,7 @@ class ExecuteCommandResponse(Message):
     response_code: int
     value: bytes | None
 
+    @override
     @classmethod
     def decode(cls, data: bytes, accept_crc_error: bool = False) -> "ExecuteCommandResponse":
         crc, length = cls._check_crc_and_get_metadata(data, accept_crc_error)
@@ -781,6 +812,7 @@ class ExecuteCommandResponse(Message):
         msg.length = length
         return msg
 
+    @override
     def _encode_body(self) -> bytes:
         if self.response_code == t.ExecuteCommandType.AFE_READ_ALL_REGISTERS.value:
             attribute_part = struct.pack(">B", self.response_code)
