@@ -8,14 +8,14 @@
 [![Tests](https://github.com/aidee-health/embody-codec/workflows/Tests/badge.svg)][tests]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)][ruff]
 
 [pypi_]: https://pypi.org/project/embody-codec/
 [status]: https://pypi.org/project/embody-codec/
 [python version]: https://pypi.org/project/embody-codec
 [tests]: https://github.com/aidee-health/embody-codec/actions?workflow=Tests
 [pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/psf/black
+[ruff]: https://github.com/astral-sh/ruff
 
 This is a Python based implementation library for the Aidee EmBody communication protocol.
 
@@ -64,12 +64,12 @@ from embodycodec import codec, attributes
 
 # Create a set attribute message
 attr = attributes.BatteryLevelAttribute(value=85)
-msg = codec.SetAttribute(attribute=attr)
+msg = codec.SetAttribute(attribute_id=attr.attribute_id, value=attr)
 encoded = msg.encode()
 
 # Decode and access attribute value
 decoded = codec.decode(encoded)
-print(f"Battery level: {decoded.attribute.value}%")
+print(f"Battery level: {decoded.value.value}%")
 ```
 
 ### Error Handling
@@ -88,24 +88,9 @@ except DecodeError as e:
     print(f"Decode failed: {e}")
 ```
 
-## Recent Improvements
+## Changelog
 
-### Performance Enhancements
-- **O(1) Message Lookups**: Replaced linear if/elif chains with dictionary-based registries for 40x faster worst-case message type resolution
-- **Optimized Memory Usage**: More efficient payload extraction in ExecuteCommand and ExecuteCommandResponse
-
-### Bug Fixes
-- Fixed ExecuteCommand/Response to correctly extract only payload bytes instead of entire buffer
-- Corrected CRC16 handling when existing_crc is 0
-- Fixed typos in error messages ("too short/long" instead of "to short/long")
-- Enhanced validation in AFE_WRITE_REGISTER command handling
-- Fixed off-by-one error in hex dump generation
-
-### Code Quality
-- Added comprehensive type annotations to all registries
-- Extracted magic numbers to named constants (e.g., TEMPERATURE_SCALE_FACTOR)
-- Improved error handling with proper validation and meaningful error messages
-- Added extensive test coverage for edge cases
+See the [releases page](https://github.com/aidee-health/embody-codec/releases) for the changelog.
 
 ## Contributing
 

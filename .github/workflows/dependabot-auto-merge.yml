@@ -8,7 +8,9 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    # Use the PR author rather than github.actor: the actor context reflects whoever
+    # triggered the run and can be influenced, while the PR author cannot.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Dependabot metadata
         id: metadata
