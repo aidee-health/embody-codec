@@ -187,6 +187,33 @@ def test_attribute_payload_at_the_length_limit_is_accepted() -> None:
     assert decoded.value == at_limit
 
 
+@pytest.mark.parametrize("fmt", [0, 1, 2, 3])
+@pytest.mark.parametrize(("no_of_ecgs", "no_of_ppgs"), [(0, 0), (1, 1), (1, 0), (0, 1)])
+def test_pulse_raw_list_accepts_short_but_complete_message(fmt: int, no_of_ecgs: int, no_of_ppgs: int) -> None:
+    """A message can legitimately be as short as 3 bytes; the guard used to demand 10.
+
+    The smallest cases here (1-byte samples, few channels) all encode to under 10 bytes,
+    so `types.PulseRawList.decode` rejected complete, valid messages outright. The
+    `file_codec` twin already guarded on 3 - this is the other half of that drift.
+    """
+    message = types.PulseRawList(
+        tick=811,
+        format=fmt,
+        no_of_ecgs=no_of_ecgs,
+        no_of_ppgs=no_of_ppgs,
+        ecgs=[7] * no_of_ecgs,
+        ppgs=[9] * no_of_ppgs,
+    )
+    encoded = message.encode()
+    assert len(encoded) == types.PulseRawList.header_length + (no_of_ecgs + no_of_ppgs) * (fmt + 1)
+
+    assert types.PulseRawList.decode(encoded) == message
+    from_file = file_codec.PulseRawList.decode(encoded)
+    assert from_file.ecgs == message.ecgs
+    assert from_file.ppgs == message.ppgs
+    assert from_file.length() == len(encoded)
+
+
 def test_system_status_names_empty_round_trip() -> None:
     """decode(b"") yields an empty list, and encoding it raised IndexError."""
     decoded = attributes.SystemStatusNamesAttribute.decode(b"")

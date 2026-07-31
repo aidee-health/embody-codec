@@ -265,7 +265,8 @@ class PulseRawList(TimetickedMessage):
         header_length = t.PulseRawList.header_length
         if len(data) < header_length:
             raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least {header_length} bytes"
+                f"Buffer too short for message. Received {len(data)} bytes, "
+                f"expected at least {header_length} bytes to determine the full length"
             )
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
