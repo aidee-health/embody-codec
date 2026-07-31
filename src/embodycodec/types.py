@@ -114,14 +114,17 @@ class PulseRawList(ComplexType):
     @override
     @classmethod
     def decode(cls, data: bytes) -> "PulseRawList":
-        if len(data) < 10:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
+        if len(data) < 3:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 3 bytes to determine full length")
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
         fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
+        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
+        total_length = 3 + bytes_per_ecg_and_ppg * no_of_ecgs + bytes_per_ecg_and_ppg * no_of_ppgs
+        if len(data) < total_length:
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {total_length} bytes")
         ecgs = []
         ppgs = []
-        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
         pos = 3
         for _ in range(no_of_ecgs):
             ecg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
