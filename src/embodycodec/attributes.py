@@ -43,6 +43,12 @@ class Attribute(ABC):
 
     @classmethod
     def length(cls) -> int:
+        """Static size of this attribute in bytes.
+
+        Only meaningful for fixed-size attributes. Subclasses with a variable-size
+        payload leave `struct_format` empty and so report 0 here — use
+        `len(instance.encode())` when the real encoded size is needed.
+        """
         return struct.calcsize(cls.struct_format)
 
     @classmethod
@@ -136,7 +142,9 @@ class FirmwareVersionAttribute(Attribute):
 
     @override
     def encode(self) -> bytes:
-        return int.to_bytes(self.value, length=3, byteorder="big", signed=True)
+        # signed=False to match decode(). With signed=True this raised OverflowError for
+        # any version >= 0x800000, i.e. major version 128 and up.
+        return int.to_bytes(self.value, length=3, byteorder="big", signed=False)
 
     @override
     @classmethod
@@ -145,7 +153,9 @@ class FirmwareVersionAttribute(Attribute):
 
     @override
     def formatted_value(self) -> str | None:
-        newval = (self.value & 0xFFFFF).to_bytes(3, "big", signed=True)
+        # 0xFFFFFF, not 0xFFFFF: the value is three bytes (24 bits), and the 20-bit mask
+        # silently truncated the major version.
+        newval = (self.value & 0xFFFFFF).to_bytes(3, "big", signed=False)
         return ".".join(str(newval[i]).zfill(2) for i in range(0, len(newval), 1))
 
 
@@ -222,11 +232,9 @@ class SystemStatusNamesAttribute(Attribute):
 
     @override
     def encode(self) -> bytes:
-        body = b""
-        for n in self.value[:-1]:
-            body += bytes(n, "ascii") + b","
-        body += bytes(self.value[-1], "ascii")
-        return body
+        # join, not value[-1]: decode(b"") yields an empty list, and indexing it raised
+        # IndexError on the empty round-trip.
+        return b",".join(bytes(n, "ascii") for n in self.value)
 
 
 @dataclass

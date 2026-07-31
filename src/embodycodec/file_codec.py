@@ -17,6 +17,9 @@ from typing import override
 # This factor converts raw sensor values to degrees Celsius
 TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
 
+# channel (1B) + packed sample count (1B) + time (8B) + reference sample (4B)
+PULSE_BLOCK_HEADER_LENGTH = 14
+
 
 @dataclass
 class ProtocolMessage:
@@ -261,7 +264,7 @@ class PulseRawList(TimetickedMessage):
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < 3:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 10 bytes")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 3 bytes")
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
         fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
@@ -320,13 +323,16 @@ class PulseBlockEcg(TimetickedMessage):
     @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockEcg":
-        if len(data) < 14:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
+        if len(data) < PULSE_BLOCK_HEADER_LENGTH:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, "
+                f"expected at least {PULSE_BLOCK_HEADER_LENGTH} bytes"
+            )
         channel = data[0]
         packed_ecgs = data[1]
-        pkg_length = 1 + 1 + 8 + 4 + (packed_ecgs * 2)
+        pkg_length = PULSE_BLOCK_HEADER_LENGTH + (packed_ecgs * 2)
         if len(data) < pkg_length:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {pkg_length} bytes")
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
@@ -346,8 +352,12 @@ class PulseBlockEcg(TimetickedMessage):
         return msg
 
     def encode(self) -> bytes:
-        payload = struct.pack("<H", 0)
-        return payload
+        # Was a stub returning b"\x00\x00" regardless of contents, which looks like a
+        # valid encoding. File-format messages are produced by the device and only ever
+        # decoded here.
+        raise NotImplementedError(
+            f"{type(self).__name__} is decode-only; file messages are not encoded by this library"
+        )
 
 
 @dataclass
@@ -371,13 +381,16 @@ class PulseBlockPpg(TimetickedMessage):
     @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None) -> "PulseBlockPpg":
-        if len(data) < 13:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
+        if len(data) < PULSE_BLOCK_HEADER_LENGTH:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, "
+                f"expected at least {PULSE_BLOCK_HEADER_LENGTH} bytes"
+            )
         channel = data[0]
         packed_ppgs = data[1]
-        pkg_length = 1 + 1 + 8 + 4 + (packed_ppgs * 2)
+        pkg_length = PULSE_BLOCK_HEADER_LENGTH + (packed_ppgs * 2)
         if len(data) < pkg_length:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 13 bytes")
+            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {pkg_length} bytes")
         (time,) = struct.unpack("<Q", data[2:10])
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
@@ -397,8 +410,12 @@ class PulseBlockPpg(TimetickedMessage):
         return msg
 
     def encode(self) -> bytes:
-        payload = struct.pack("<H", 0)
-        return payload
+        # Was a stub returning b"\x00\x00" regardless of contents, which looks like a
+        # valid encoding. File-format messages are produced by the device and only ever
+        # decoded here.
+        raise NotImplementedError(
+            f"{type(self).__name__} is decode-only; file messages are not encoded by this library"
+        )
 
 
 @dataclass

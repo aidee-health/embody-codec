@@ -678,12 +678,14 @@ def test_send_file() -> None:
 
 
 def test_send_file_response() -> None:
-    response = codec.SendFileResponse(9)
+    response = codec.SendFileResponse(file_crc=9)
     encoded = response.encode()
     assert encoded == b"\xc3\x00\x07\x00\t\xd8\xdf"
     decoded = codec.decode(encoded)
     assert isinstance(decoded, codec.SendFileResponse)
     assert decoded.length == 7
+    assert decoded.file_crc == 9
+    assert decoded == response
 
 
 def test_delete_file() -> None:

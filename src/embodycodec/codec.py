@@ -26,6 +26,23 @@ from embodycodec.exceptions import DecodeError
 T = TypeVar("T", bound="Message")
 AT = TypeVar("AT", bound="a.Attribute")
 
+MAX_ATTRIBUTE_LENGTH = 0xFF
+"""The attribute length field is a single unsigned byte."""
+
+
+def _encode_attribute_length(attribute_part: bytes) -> bytes:
+    """Pack the one-byte attribute length, refusing payloads that do not fit.
+
+    Without the check, struct raises a bare `struct.error` mentioning only the format
+    character, which says nothing about which attribute was too large.
+    """
+    if len(attribute_part) > MAX_ATTRIBUTE_LENGTH:
+        raise ValueError(
+            f"Attribute payload is {len(attribute_part)} bytes, but the protocol length "
+            f"field holds at most {MAX_ATTRIBUTE_LENGTH}"
+        )
+    return struct.pack(">B", len(attribute_part))
+
 
 @dataclass
 class Message(ABC):
@@ -186,10 +203,11 @@ class SetAttribute(Message):
 
     @override
     def _encode_body(self) -> bytes:
-        first_part_of_body = struct.pack(">B", self.attribute_id)
-        length_part = struct.pack(">B", self.value.length())
+        # The length must come from the encoded bytes, not from Attribute.length(),
+        # which is a classmethod over struct_format and therefore reports 0 for every
+        # variable-length attribute (strings, system status, pulse raw lists).
         attribute_part = self.value.encode()
-        return first_part_of_body + length_part + attribute_part
+        return struct.pack(">B", self.attribute_id) + _encode_attribute_length(attribute_part) + attribute_part
 
 
 @dataclass
@@ -238,8 +256,7 @@ class GetAttributeResponse(Message):
         first_part_of_body = struct.pack(">BQ", self.attribute_id, self.changed_at)
         reporting_part = self.reporting.encode()
         attribute_part = self.value.encode()
-        length_part = struct.pack(">B", len(attribute_part))
-        return first_part_of_body + reporting_part + length_part + attribute_part
+        return first_part_of_body + reporting_part + _encode_attribute_length(attribute_part) + attribute_part
 
     def value_as(self, attr_type: type[AT]) -> AT:
         """Type-safe accessor for the attribute value with runtime type checking."""
@@ -362,8 +379,7 @@ class AttributeChanged(Message):
     def _encode_body(self) -> bytes:
         first_part_of_body = struct.pack(">QB", self.changed_at, self.attribute_id)
         attribute_part = self.value.encode()
-        length_part = struct.pack(">B", len(attribute_part))
-        return first_part_of_body + length_part + attribute_part
+        return first_part_of_body + _encode_attribute_length(attribute_part) + attribute_part
 
 
 @dataclass
@@ -441,12 +457,12 @@ class Alarm(Message):
     struct_format = ">QB"
     alarm_types = {0x01: "Low battery", 0x02: "Device off body", 0x03: "Device error"}
     msg_type = 0x31
-    changed_at: int | None
-    alarm_type: int | None
+    # Not optional: struct_format ">QB" cannot pack None, so an Alarm holding None
+    # raises struct.error on encode(). The annotation must not promise otherwise.
+    changed_at: int
+    alarm_type: int
 
     def alarm_message(self) -> str | None:
-        if self.alarm_type is None:
-            return None
         return self.alarm_types.get(self.alarm_type)
 
 
@@ -591,7 +607,14 @@ class SendFile(Message):
 class SendFileResponse(Message):
     struct_format = ">H"
     msg_type = 0xC3
-    crc: int
+
+    file_crc: int
+    """CRC of the transferred file.
+
+    Note: this must not be named `crc`. `Message.crc` holds the message footer CRC and
+    is assigned by `Message.decode` after construction, so a field of that name would be
+    overwritten with the footer value during every decode.
+    """
 
 
 @dataclass
