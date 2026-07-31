@@ -119,7 +119,9 @@ force-single-line = true
 lines-after-imports = 2
 
 [tool.ruff.lint.mccabe]
-max-complexity = 50
+# Was 50, which disabled C901 in practice. The only function over 10 was
+# ExecuteCommand._encode_body, now split into helpers.
+max-complexity = 15
 
 [build-system]
 requires = ["hatchling"]

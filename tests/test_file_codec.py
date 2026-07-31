@@ -1,3 +1,5 @@
+import struct
+
 import pytest
 
 from embodycodec import file_codec as codec
@@ -216,7 +218,36 @@ def test_decode_battery_diagnostics() -> None:
 
 
 def test_decode_generic_message() -> None:
-    msg = codec.decode_message(bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00"))
+    raw = bytes.fromhex("bb0b35010000000200000003000400050006000700080009000A00")
+    msg = codec.decode_message(raw)
     assert isinstance(msg, codec.BatteryDiagnostics)
-    assert 24 == msg.length()
-    assert 24 == codec.BatteryDiagnostics.default_length()
+    # 26, not 24: every other TimetickedMessage counts the two-byte timestamp in its
+    # length, and a stream parser advances by 1 (type byte) + length(). BatteryDiagnostics
+    # used to report 24, so it desynced the stream by two bytes on every such record.
+    assert 26 == msg.length()
+    assert 26 == codec.BatteryDiagnostics.default_length()
+    assert len(raw) == 1 + msg.length()
+
+
+def test_timeticked_length_includes_timestamp() -> None:
+    """A file stream is walked by advancing 1 + length(), so length() must span the record.
+
+    Pins the convention BatteryDiagnostics used to violate. Iterates the registry rather
+    than a hand-written list, so a future message type cannot reintroduce the bug.
+    """
+    struct_driven = [
+        message_class
+        for message_class in codec._FILE_MESSAGE_REGISTRY.values()
+        if issubclass(message_class, codec.TimetickedMessage) and message_class.unpack_format
+    ]
+    assert len(struct_driven) >= 10, "registry lookup found suspiciously few message types"
+
+    for message_class in struct_driven:
+        # The leading H is the two-LSB timestamp; without it, length() under-reports the
+        # record and a stream parser desyncs by two bytes.
+        assert message_class.unpack_format[1] == "H", message_class.__name__
+        assert message_class.default_length() == struct.calcsize(message_class.unpack_format), message_class.__name__
+
+    # Types that compute default_length() by hand instead of from a struct format.
+    for message_class, expected in [(codec.PpgRaw, 8), (codec.PpgRawAll, 11)]:
+        assert message_class.default_length() == expected, message_class.__name__

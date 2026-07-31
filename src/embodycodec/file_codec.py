@@ -12,10 +12,9 @@ import struct
 from dataclasses import dataclass
 from typing import override
 
+from embodycodec import types as t
+from embodycodec.types import TEMPERATURE_SCALE_FACTOR
 
-# Temperature sensor conversion factor (degrees Celsius per raw unit)
-# This factor converts raw sensor values to degrees Celsius
-TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
 
 # channel (1B) + packed sample count (1B) + time (8B) + reference sample (4B)
 PULSE_BLOCK_HEADER_LENGTH = 14
@@ -263,15 +262,18 @@ class PulseRawList(TimetickedMessage):
     @override
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
-        if len(data) < 3:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 3 bytes")
+        header_length = t.PulseRawList.header_length
+        if len(data) < header_length:
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, expected at least {header_length} bytes"
+            )
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
-        fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
+        fmt, no_of_ecgs, no_of_ppgs = cls.to_format_and_lengths(format_and_sizes)
         ecgs = []
         ppgs = []
-        bytes_per_ecg_and_ppg = 1 if fmt == 0 else 2 if fmt == 1 else 3 if fmt == 2 else 4
-        length = 3 + (no_of_ecgs * bytes_per_ecg_and_ppg) + (no_of_ppgs * bytes_per_ecg_and_ppg)
+        bytes_per_ecg_and_ppg = t.PulseRawList.bytes_per_sample(fmt)
+        length = header_length + (no_of_ecgs + no_of_ppgs) * bytes_per_ecg_and_ppg
         if len(data) < length:
             raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {length} bytes")
         pos = 3
@@ -296,10 +298,11 @@ class PulseRawList(TimetickedMessage):
 
     @staticmethod
     def to_format_and_lengths(format_and_sizes: int) -> tuple:
-        fmt = format_and_sizes & 0x3
-        no_of_ecgs = (format_and_sizes & 0x0F) >> 2
-        no_of_ppgs = (format_and_sizes & 0xF0) >> 4
-        return fmt, no_of_ecgs, no_of_ppgs
+        """Delegates to types.PulseRawList so the bit layout has one definition.
+
+        The two copies of this had already drifted apart once.
+        """
+        return t.PulseRawList.to_format_and_lengths(format_and_sizes)
 
 
 @dataclass
@@ -420,7 +423,11 @@ class PulseBlockPpg(TimetickedMessage):
 
 @dataclass
 class BatteryDiagnostics(TimetickedMessage):
-    struct_format = "<IIHHhhHHHH"
+    # Leading "<H" is the two-LSB timestamp that TimetickedMessage.decode strips.
+    # This used to be spelled `struct_format` (the base class reads `unpack_format`),
+    # which forced hand-written default_length and decode overrides that only
+    # reimplemented the inherited behaviour.
+    unpack_format = "<HIIHHhhHHHH"
     ttf: int  # s Time To Full
     tte: int  # s Time To Empty
     voltage: int  # mV *10 (0-6553.5 mV) Battery Voltage
@@ -432,26 +439,6 @@ class BatteryDiagnostics(TimetickedMessage):
     rep_cap: int  # mAh *100 (0-655.35 mAh) Remaining capacity
     repsoc: int  # % *100  (0-100.00 %) Reported State Of Charge (Combined and final result)
     vfsoc: int  # % *100  (0-100.00 %) Voltage based fuelgauge State Of Charge
-
-    @override
-    @classmethod
-    def default_length(cls, version: tuple[int, int, int] | None = None) -> int:
-        return struct.calcsize(cls.struct_format)
-
-    @override
-    @classmethod
-    def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
-        if len(data) < cls.default_length(version):
-            raise BufferError("Buffer too short for message")
-        ts_lsb = int.from_bytes(data[0:2], byteorder="little", signed=False)
-        msg = BatteryDiagnostics(
-            *struct.unpack(
-                BatteryDiagnostics.struct_format,
-                data[2 : cls.default_length(version) + 2],
-            )
-        )
-        msg.two_lsb_of_timestamp = ts_lsb
-        return msg
 
 
 # File protocol message registry

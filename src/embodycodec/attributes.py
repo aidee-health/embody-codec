@@ -18,11 +18,7 @@ from typing import TypeVar
 from typing import override
 
 from embodycodec import types as t
-
-
-# Temperature sensor conversion factor (degrees Celsius per raw unit)
-# This factor converts raw sensor values to degrees Celsius
-TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
+from embodycodec.types import TEMPERATURE_SCALE_FACTOR
 
 
 T = TypeVar("T", bound="Attribute")

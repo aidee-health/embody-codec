@@ -3,6 +3,7 @@
 import pytest
 
 from embodycodec import codec
+from embodycodec import types
 
 
 def test_execute_command_decode_payload_extraction():
@@ -123,3 +124,54 @@ def test_execute_command_with_none_value():
     cmd_press = codec.ExecuteCommand(command_id=0x03, value=None)
     body_press = cmd_press._encode_body()
     assert body_press == b"\x03"  # Just command_id, no value bytes
+
+
+def test_every_command_type_encode_body_is_covered() -> None:
+    """Every ExecuteCommandType must have its encode shape pinned.
+
+    Before this, REBOOT_DEVICE, FORCE_BLE_CONNECTION, REINIT_SERVICE,
+    AFE_READ_ALL_REGISTERS and AFE_GAIN_SETTING had no encode test at all, so the
+    refactor of _encode_body could have changed them silently.
+    """
+    single_byte_value = b"\x2a"
+    expected_bodies = {
+        types.ExecuteCommandType.RESET_DEVICE: (b"", b"\x01"),
+        types.ExecuteCommandType.REBOOT_DEVICE: (b"", b"\x02"),
+        types.ExecuteCommandType.PRESS_BUTTON: (b"\x02\x01\xf4", b"\x03\x02\x01\xf4"),
+        types.ExecuteCommandType.FORCE_ON_BODY: (single_byte_value, b"\x04\x2a"),
+        types.ExecuteCommandType.FORCE_USB_CONNECTION: (single_byte_value, b"\x05\x2a"),
+        types.ExecuteCommandType.FORCE_BLE_CONNECTION: (single_byte_value, b"\x06\x2a"),
+        types.ExecuteCommandType.FORCE_BATTERY_LEVEL: (single_byte_value, b"\x07\x2a"),
+        # Parameter bytes go out reversed: little endian payload in a big endian message.
+        types.ExecuteCommandType.REINIT_SERVICE: (b"\x01\x02\x03\x04", b"\x08\x04\x03\x02\x01"),
+        types.ExecuteCommandType.AFE_READ_ALL_REGISTERS: (b"", b"\xa1"),
+        types.ExecuteCommandType.AFE_WRITE_REGISTER: (b"\x10\x00\x00\x00\x05", b"\xa2\x10\x00\x00\x00\x05"),
+        types.ExecuteCommandType.AFE_CALIBRATION_COMMAND: (single_byte_value, b"\xa3\x2a"),
+        types.ExecuteCommandType.AFE_GAIN_SETTING: (single_byte_value, b"\xa4\x2a"),
+    }
+    assert set(expected_bodies) == set(types.ExecuteCommandType), "a command type has no encode expectation"
+
+    for command_type, (value, expected_body) in expected_bodies.items():
+        message = codec.ExecuteCommand(command_id=command_type.value, value=value)
+        encoded = message.encode()
+        body = encoded[codec.Message.hdr_len : len(encoded) - codec.Message.crc_len]
+        assert body == expected_body, command_type.name
+
+        decoded = codec.decode(encoded)
+        assert isinstance(decoded, codec.ExecuteCommand)
+        assert decoded.command_id == command_type.value, command_type.name
+
+
+def test_reinit_service_accepts_int_value() -> None:
+    """The int branch packs big endian, unlike the bytes branch which reverses."""
+    message = codec.ExecuteCommand(command_id=types.ExecuteCommandType.REINIT_SERVICE.value, value=0x01020304)
+    encoded = message.encode()
+    body = encoded[codec.Message.hdr_len : len(encoded) - codec.Message.crc_len]
+    assert body == b"\x08\x01\x02\x03\x04"
+
+
+def test_reinit_service_defaults_to_zero_parameter() -> None:
+    message = codec.ExecuteCommand(command_id=types.ExecuteCommandType.REINIT_SERVICE.value, value=None)
+    encoded = message.encode()
+    body = encoded[codec.Message.hdr_len : len(encoded) - codec.Message.crc_len]
+    assert body == b"\x08\x00\x00\x00\x00"

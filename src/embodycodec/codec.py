@@ -727,93 +727,56 @@ class ExecuteCommand(Message):
         msg.length = length
         return msg
 
+    _SINGLE_BYTE_VALUE_COMMANDS = frozenset(
+        {
+            t.ExecuteCommandType.FORCE_ON_BODY.value,
+            t.ExecuteCommandType.FORCE_USB_CONNECTION.value,
+            t.ExecuteCommandType.FORCE_BLE_CONNECTION.value,
+            t.ExecuteCommandType.FORCE_BATTERY_LEVEL.value,
+            t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value,
+            t.ExecuteCommandType.AFE_GAIN_SETTING.value,
+        }
+    )
+    """Commands carrying exactly one payload byte, encoded identically."""
+
+    def _encode_single_byte_value(self) -> bytes:
+        if isinstance(self.value, bytes) and len(self.value) > 0:
+            return struct.pack(">B", self.value[0])
+        if isinstance(self.value, int):
+            return struct.pack(">B", self.value)
+        return b"\x00"
+
+    def _encode_reinit_service_value(self) -> bytes:
+        # Byte-reversed on purpose: the parameter goes out little endian within a
+        # big endian message.
+        if isinstance(self.value, bytes) and len(self.value) > 0:
+            return struct.pack(">BBBB", self.value[3], self.value[2], self.value[1], self.value[0])
+        if isinstance(self.value, int):
+            return struct.pack(">I", self.value)
+        return b"\x00\x00\x00\x00"
+
+    def _encode_afe_write_register_value(self) -> bytes:
+        if isinstance(self.value, bytes) and len(self.value) >= 5:
+            address_part = struct.pack(">B", self.value[0])
+            return address_part + struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
+        data_len = len(self.value) if isinstance(self.value, bytes) else 0
+        raise ValueError(f"AFE_WRITE_REGISTER requires 5 bytes of data, got {data_len}")
+
     @override
     def _encode_body(self) -> bytes:
+        command_part = struct.pack(">B", self.command_id)
+
+        if self.command_id in self._SINGLE_BYTE_VALUE_COMMANDS:
+            return command_part + self._encode_single_byte_value()
         if self.command_id == t.ExecuteCommandType.PRESS_BUTTON.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            return attribute_part + (self.value if isinstance(self.value, bytes) else b"")
-
-        if self.command_id == t.ExecuteCommandType.FORCE_ON_BODY.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.FORCE_USB_CONNECTION.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.FORCE_BLE_CONNECTION.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.FORCE_BATTERY_LEVEL.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
+            return command_part + (self.value if isinstance(self.value, bytes) else b"")
         if self.command_id == t.ExecuteCommandType.REINIT_SERVICE.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">BBBB", self.value[3], self.value[2], self.value[1], self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">I", self.value)
-            else:
-                value_part = b"\x00\x00\x00\x00"
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.AFE_CALIBRATION_COMMAND.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
-        if self.command_id == t.ExecuteCommandType.AFE_GAIN_SETTING.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) > 0:
-                value_part = struct.pack(">B", self.value[0])
-            elif isinstance(self.value, int):
-                value_part = struct.pack(">B", self.value)
-            else:
-                value_part = b"\x00"
-            return attribute_part + value_part
-
+            return command_part + self._encode_reinit_service_value()
         if self.command_id == t.ExecuteCommandType.AFE_WRITE_REGISTER.value:
-            attribute_part = struct.pack(">B", self.command_id)
-            if isinstance(self.value, bytes) and len(self.value) >= 5:
-                address_part = struct.pack(">B", self.value[0])
-                value_part = struct.pack(">I", int.from_bytes(self.value[1:5], byteorder="big"))
-                return attribute_part + address_part + value_part
-            data_len = len(self.value) if isinstance(self.value, bytes) else 0
-            raise ValueError(f"AFE_WRITE_REGISTER requires 5 bytes of data, got {data_len}")
+            return command_part + self._encode_afe_write_register_value()
 
-        attribute_part = struct.pack(">B", self.command_id)
-        return attribute_part
+        # Remaining commands (reset, reboot, AFE read-all) carry no payload.
+        return command_part
 
 
 @dataclass
@@ -925,10 +888,8 @@ def decode(data: bytes, accept_crc_error: bool = False) -> Message:
 
     try:
         return message_class.decode(trimmed_data, accept_crc_error)
-    except BufferError as e:
-        raise e
-    except CrcError as e:
-        raise e
+    except (BufferError, CrcError):
+        raise
     except Exception as e:
         hexdump = data.hex() if len(data) <= 1024 else f"{data[0:1024].hex()}..."
         raise DecodeError(f"Error decoding message type {hex(message_type)}. Message payload: {hexdump}") from e

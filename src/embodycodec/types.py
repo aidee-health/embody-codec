@@ -9,6 +9,11 @@ from typing import TypeVar
 from typing import override
 
 
+# Temperature sensor conversion factor (degrees Celsius per raw unit).
+# Defined here rather than in attributes/file_codec so both share one definition.
+TEMPERATURE_SCALE_FACTOR = 0.0078125  # 1/128
+
+
 class ExecuteCommandType(enum.Enum):
     RESET_DEVICE = 0x01
     REBOOT_DEVICE = 0x02
