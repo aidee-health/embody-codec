@@ -1,12 +1,20 @@
 [project]
 name = "embody-codec"
-version = "1.0.40"
+version = "2.0.0"
 description = "Embody Codec"
 authors = [{name = "Aidee Health AS", email = "hello@aidee.io"}]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-classifiers = ["Development Status :: 5 - Production/Stable"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Typing :: Typed",
+]
 
 [project.urls]
 Changelog = "https://github.com/aidee-health/embody-codec/releases"
@@ -119,7 +127,9 @@ force-single-line = true
 lines-after-imports = 2
 
 [tool.ruff.lint.mccabe]
-max-complexity = 50
+# Was 50, which disabled C901 in practice. The only function over 10 was
+# ExecuteCommand._encode_body, now split into helpers.
+max-complexity = 15
 
 [build-system]
 requires = ["hatchling"]

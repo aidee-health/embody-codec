@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # release-drafter reads merged PRs to categorise the notes. Once a permissions
+      # block exists, every unlisted scope is none, so this must be explicit.
+      pull-requests: read
     steps:
       - name: Check out the repository
         # zizmor: ignore[artipacked]
