@@ -88,6 +88,40 @@ except DecodeError as e:
     print(f"Decode failed: {e}")
 ```
 
+## Upgrading to 2.0.0
+
+Every break below is the removal of an API that never worked correctly. Nothing here
+changes behaviour that was previously right.
+
+**`codec.SendFileResponse.crc` is renamed to `file_crc`.** The old name collided with
+`Message.crc`, which holds the message footer CRC and is assigned during decode — so the
+file CRC was silently overwritten. Reading `.crc` on this class never returns the file
+CRC, so it must be replaced rather than left alone:
+
+```python
+SendFileResponse(crc=x)   ->  SendFileResponse(file_crc=x)
+response.crc              ->  response.file_crc
+```
+
+**`file_codec.BatteryDiagnostics.length()` returns 26, not 24.** It excluded the two-byte
+timestamp that every other message counts, so a parser walking a file by advancing
+`1 + length()` desynced by two bytes on every such record. If you compensated for this,
+remove the compensation.
+
+**`file_codec.BatteryDiagnostics.struct_format` is gone**, replaced by `unpack_format`
+(the name its base class actually reads). Note this is the `file_codec` class; the
+unrelated `types.BatteryDiagnostics.struct_format` is unchanged.
+
+**`file_codec.PulseBlockEcg.encode()` and `PulseBlockPpg.encode()` raise
+`NotImplementedError`.** They previously returned two zero bytes regardless of contents.
+File-format messages are produced by the device and are decode-only.
+
+One fix that needs no code change but does change bytes on the wire: `SetAttribute` now
+writes the true payload length for variable-length attributes (`ModelAttribute`,
+`VendorAttribute`, `SystemStatusNamesAttribute`, `SystemStatusAttribute`,
+`PulseRawListAttribute`). It previously wrote `0`, so a conforming parser dropped those
+values. Fixed-size attributes encode exactly as before.
+
 ## Changelog
 
 See the [releases page](https://github.com/aidee-health/embody-codec/releases) for the changelog.
