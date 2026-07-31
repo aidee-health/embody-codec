@@ -134,7 +134,8 @@ class PulseRawList(ComplexType):
     def decode(cls, data: bytes) -> "PulseRawList":
         if len(data) < cls.header_length:
             raise BufferError(
-                f"Buffer too short for message. Received {len(data)} bytes, expected at least {cls.header_length} bytes"
+                f"Buffer too short for message. Received {len(data)} bytes, "
+                f"expected at least {cls.header_length} bytes to determine the full length"
             )
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
