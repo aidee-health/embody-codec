@@ -135,6 +135,9 @@ dmypy.json
 .vscode/
 *.code-workspace
 
+# macOS
+.DS_Store
+
 # LLM tools
 .claude/
 CLAUDE.md

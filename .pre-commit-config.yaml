@@ -3,7 +3,7 @@ repos:
     rev: v0.15.15
     hooks:
       # Run the linter (replaces flake8).
-      - id: ruff
+      - id: ruff-check
         types_or: [ python, pyi ]
         args: [ --fix ]
       # Run the formatter (replaces black).
@@ -18,6 +18,16 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+  # Lint GitHub Actions workflows and the repo's own composite actions.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  # Audit Actions for supply-chain and permission issues.
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.28.0
+    hooks:
+      - id: zizmor
   - repo: local
     hooks:
       - id: ty

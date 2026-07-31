@@ -1,0 +1,29 @@
+# Configuration for zizmor (GitHub Actions security audit), run via pre-commit.
+# Docs: https://docs.zizmor.sh/configuration/
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Require every `uses:` to name a tag or SHA — never a mutable branch.
+        # Full hash-pinning ("hash-pin") is stricter and worth considering, but it
+        # makes the workflows much harder to read and relies on Dependabot to keep
+        # the hashes and their version comments in sync. Revisit if this repo ever
+        # gains privileged self-hosted runners.
+        "*": ref-pin
+
+  use-trusted-publishing:
+    ignore:
+      # TODO: migrate PyPI publishing from the PYPI_TOKEN secret to Trusted Publishing
+      # (OIDC). This needs a one-time configuration on the PyPI project side before the
+      # workflow can drop `user`/`password`, so it cannot be done from this repo alone.
+      # See https://docs.pypi.org/trusted-publishers/
+      - release.yml
+
+  dependabot-cooldown:
+    ignore:
+      # Deliberate: this repo wants updates promptly (interval: daily) and gates them
+      # behind CI plus auto-merge for non-major bumps. Adding a cooldown would delay
+      # every update by a week. If the threat model shifts toward compromised
+      # upstream releases, set `cooldown: { default-days: 7 }` in dependabot.yml
+      # and drop this ignore.
+      - dependabot.yml

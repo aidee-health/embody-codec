@@ -5,10 +5,15 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    # tests.yml uses no secrets, so nothing is inherited.
     uses: ./.github/workflows/tests.yml
-    secrets: inherit
+    permissions:
+      contents: read
 
   release:
     name: Release
@@ -18,14 +23,16 @@ jobs:
       contents: write
     steps:
       - name: Check out the repository
+        # zizmor: ignore[artipacked]
+        # Credentials must persist: salsify/action-detect-and-tag-new-version below
+        # pushes the release tag using this checkout's git credentials.
         uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      # Note: deliberately no pre-commit cache here. This job publishes to PyPI, and a
+      # restored cache is an injection vector into the published artifact (zizmor
+      # cache-poisoning). The cache only saves ~30s on a release run.
 
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
@@ -36,7 +43,7 @@ jobs:
       - name: Check if there is a parent commit
         id: check-parent-commit
         run: |
-          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> "$GITHUB_OUTPUT"
 
       - name: Detect and tag new version
         id: check-version

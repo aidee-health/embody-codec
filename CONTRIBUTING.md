@@ -38,7 +38,6 @@ Request features on the [Issue Tracker].
 You need Python 3.12+ and the following tools:
 
 - [UV] - Fast Python package installer and resolver
-- [tox] - Standardized testing in Python
 
 Install the package with development requirements:
 
@@ -56,7 +55,6 @@ $ uv run python
 ```
 
 [uv]: https://github.com/astral-sh/uv
-[tox]: https://tox.wiki/
 
 ## How to test the project
 
@@ -66,23 +64,15 @@ Run the full test suite using the Makefile:
 $ make test
 ```
 
-For more complex testing across multiple Python versions, use tox:
+To run a single test file or a subset of tests:
 
 ```console
-$ tox
+$ uv run pytest tests/test_codec.py
+$ uv run pytest -k "test_decode"
 ```
 
-List the available tox environments:
-
-```console
-$ tox --listenvs
-```
-
-You can also run a specific tox environment:
-
-```console
-$ tox -e py312
-```
+The full matrix across supported Python versions (3.12, 3.13) runs in CI —
+see `.github/workflows/tests.yml`.
 
 Unit tests are located in the _tests_ directory,
 and are written using the [pytest] testing framework.
