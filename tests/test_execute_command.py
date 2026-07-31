@@ -175,3 +175,22 @@ def test_reinit_service_defaults_to_zero_parameter() -> None:
     encoded = message.encode()
     body = encoded[codec.Message.hdr_len : len(encoded) - codec.Message.crc_len]
     assert body == b"\x08\x00\x00\x00\x00"
+
+
+@pytest.mark.parametrize("partial", [b"\x01", b"\x01\x02", b"\x01\x02\x03"])
+def test_reinit_service_rejects_partial_parameter(partial: bytes) -> None:
+    """A 1-3 byte payload used to raise a bare IndexError from indexing value[3].
+
+    Empty bytes still means "zero parameter" - only a partial one is an error, matching
+    how AFE_WRITE_REGISTER reports a wrong-sized payload.
+    """
+    message = codec.ExecuteCommand(command_id=types.ExecuteCommandType.REINIT_SERVICE.value, value=partial)
+    with pytest.raises(ValueError, match="REINIT_SERVICE requires 4 bytes"):
+        message.encode()
+
+
+def test_reinit_service_empty_bytes_still_means_zero() -> None:
+    message = codec.ExecuteCommand(command_id=types.ExecuteCommandType.REINIT_SERVICE.value, value=b"")
+    encoded = message.encode()
+    body = encoded[codec.Message.hdr_len : len(encoded) - codec.Message.crc_len]
+    assert body == b"\x08\x00\x00\x00\x00"

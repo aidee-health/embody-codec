@@ -746,10 +746,20 @@ class ExecuteCommand(Message):
             return struct.pack(">B", self.value)
         return b"\x00"
 
+    REINIT_SERVICE_PARAMETER_LENGTH = 4
+    """Service parameter width in bytes."""
+
     def _encode_reinit_service_value(self) -> bytes:
         # Byte-reversed on purpose: the parameter goes out little endian within a
         # big endian message.
         if isinstance(self.value, bytes) and len(self.value) > 0:
+            if len(self.value) < self.REINIT_SERVICE_PARAMETER_LENGTH:
+                # Indexing value[3] on a partial payload used to raise a bare IndexError
+                # that named neither the command nor the expected width.
+                raise ValueError(
+                    f"REINIT_SERVICE requires {self.REINIT_SERVICE_PARAMETER_LENGTH} bytes of data, "
+                    f"got {len(self.value)}"
+                )
             return struct.pack(">BBBB", self.value[3], self.value[2], self.value[1], self.value[0])
         if isinstance(self.value, int):
             return struct.pack(">I", self.value)
