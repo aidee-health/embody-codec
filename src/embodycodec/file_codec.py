@@ -277,7 +277,7 @@ class PulseRawList(TimetickedMessage):
         length = header_length + (no_of_ecgs + no_of_ppgs) * bytes_per_ecg_and_ppg
         if len(data) < length:
             raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected {length} bytes")
-        pos = 3
+        pos = header_length
         for _ in range(no_of_ecgs):
             ecg = int.from_bytes(data[pos : pos + bytes_per_ecg_and_ppg], byteorder="little", signed=True)
             ecgs.append(ecg)
@@ -341,7 +341,7 @@ class PulseBlockEcg(TimetickedMessage):
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
-        pos = 14
+        pos = PULSE_BLOCK_HEADER_LENGTH
         for _ in range(packed_ecgs):
             sample = ref + int.from_bytes(data[pos : pos + 2], byteorder="little", signed=True)
             samples.append(sample)
@@ -399,7 +399,7 @@ class PulseBlockPpg(TimetickedMessage):
         samples = []
         ref = int.from_bytes(data[10:14], byteorder="little", signed=True)
         samples.append(ref)
-        pos = 14
+        pos = PULSE_BLOCK_HEADER_LENGTH
         for _ in range(packed_ppgs):
             sample = ref + int.from_bytes(data[pos : pos + 2], byteorder="little", signed=True)
             samples.append(sample)
