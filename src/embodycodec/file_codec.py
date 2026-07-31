@@ -264,7 +264,10 @@ class PulseRawList(TimetickedMessage):
     @classmethod
     def decode(cls, data: bytes, version: tuple[int, int, int] | None = None):
         if len(data) < 3:
-            raise BufferError(f"Buffer too short for message. Received {len(data)} bytes, expected at least 3 bytes")
+            raise BufferError(
+                f"Buffer too short for message. Received {len(data)} bytes, "
+                f"expected at least 3 bytes to determine the full length"
+            )
         (tick,) = struct.unpack("<H", data[0:2])
         (format_and_sizes,) = struct.unpack("<B", data[2:3])
         fmt, no_of_ecgs, no_of_ppgs = PulseRawList.to_format_and_lengths(format_and_sizes)
